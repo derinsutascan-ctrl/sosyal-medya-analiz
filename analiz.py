@@ -3,148 +3,143 @@ import pandas as pd
 import plotly.express as px
 import os
 
-# --- 1. SAYFA VE TEMA AYARLARI ---
-st.set_page_config(page_title="Teknostore Rapor Paneli", layout="wide")
+# --- 1. SAYFA AYARLARI ---
+st.set_page_config(page_title="Teknostore Gelişmiş Analiz", layout="wide")
 
-# CSS: Logoyu ortalar ve metriklerin her iki modda (aydınlık/karanlık) okunmasını sağlar
 st.markdown("""
     <style>
-    /* Metrik Kartları: Arka planı yumuşak gri yaparak yazıların okunmasını sağlar */
     div[data-testid="stMetric"] {
-        background-color: rgba(128, 128, 128, 0.1);
+        background-color: rgba(128, 128, 128, 0.08);
         border: 1px solid rgba(128, 128, 128, 0.2);
-        padding: 20px;
-        border-radius: 15px;
+        padding: 15px; border-radius: 12px;
     }
-    
-    /* Giriş Paneli ve Logo Konumu */
-    .login-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin-top: 30px;
-    }
-    
-    .login-box {
-        width: 400px;
-        padding: 30px;
-        border: 1px solid rgba(128, 128, 128, 0.2);
-        border-radius: 12px;
-        background-color: transparent;
-    }
+    .login-container { display: flex; flex-direction: column; align-items: center; margin-top: 50px; }
+    .login-box { width: 380px; padding: 30px; border: 1px solid rgba(128, 128, 128, 0.2); border-radius: 15px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. VERİ TABANI SİSTEMİ ---
-DB_FILE = 'marka_veritabani_2026.csv'
+# --- 2. VERİ SİSTEMİ (Yeni Sütunlar: Etkileşim ve YT İzlenme) ---
+DB_FILE = 'marka_analiz_2026_v2.csv'
 
 def veri_yukle():
     if not os.path.exists(DB_FILE):
+        # Örnek başlangıç verileri (Trendi görebilmen için 3 aylık)
+        data = []
         markalar = ['Teknostore', 'Aula', 'Nowgo']
-        rows = []
+        aylar = ['Ocak', 'Şubat', 'Mart']
         for m in markalar:
-            for p in ['Instagram', 'Facebook', 'YouTube']:
-                rows.append({'Marka': m, 'Ay': 'Ocak 2026', 'Platform': p, 'Takipci': 1000, 'Erisim': 1000})
-        df = pd.DataFrame(rows)
+            for a in aylar:
+                for p in ['Instagram', 'Facebook', 'YouTube']:
+                    val = 1000 if a == 'Ocak' else (1200 if a == 'Şubat' else 1500)
+                    data.append({
+                        'Marka': m, 'Ay': a, 'Platform': p, 
+                        'Takipci': val, 'Etkilesim': val/10, 'YT_Izlenme': val*5 if p == 'YouTube' else 0
+                    })
+        df = pd.DataFrame(data)
         df.to_csv(DB_FILE, index=False)
         return df
     return pd.read_csv(DB_FILE)
 
-# --- 3. OTURUM YÖNETİMİ ---
-if "oturum_durumu" not in st.session_state:
-    st.session_state.oturum_durumu = False
+# --- 3. OTURUM VE GİRİŞ ---
+if "oturum" not in st.session_state: st.session_state.oturum = False
 
-# --- 4. GİRİŞ EKRANI (TAM İSTEDİĞİN GÖRSEL DÜZEN) ---
-if not st.session_state.oturum_durumu:
-    st.markdown('<div class="login-container">', unsafe_allow_html=True)
-    
-    # Logo Dosyası (Aynı klasörde logo.png olmalı)
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=400)
-    else:
-        st.title("TEKNOSTORE")
-    
-    _, col_mid, _ = st.columns([1, 2, 1])
-    with col_mid:
-        st.markdown('<div class="login-box">', unsafe_allow_html=True)
-        st.subheader("🔐 Yönetim Girişi")
-        user = st.text_input("Kullanıcı Adı", placeholder="Kullanıcı adınız...")
-        pw = st.text_input("Şifre", type="password", placeholder="Şifreniz...")
-        
-        if st.button("Sisteme Giriş Yap", use_container_width=True):
-            if user == "admin" and pw == "teknostore123":
-                st.session_state.oturum_durumu = True
-                st.rerun()
-            else:
-                st.error("Giriş bilgileri hatalı!")
-        st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-else:
-    # --- 5. ANA PANEL ---
-    df = veri_yukle()
-    
-    with st.sidebar:
-        if os.path.exists("logo.png"):
-            st.image("logo.png", use_container_width=True)
-        st.title("🚀 Menü")
-        sayfa_modu = st.radio("Görünüm Seçin:", ["🏠 Genel Bakış", "📊 Marka Bazlı Detay"])
-        st.divider()
-        
-        if sayfa_modu == "📊 Marka Bazlı Detay":
-            secilen_marka = st.selectbox("Marka Seçin:", df['Marka'].unique())
-            secilen_ay = st.selectbox("Ay Seçin:", ["Ocak 2026", "Şubat 2026", "Mart 2026"])
-        
-        st.divider()
-        with st.expander("🛠️ Veri Düzenle / Yeni Marka"):
-            with st.form("admin_form"):
-                f_marka = st.text_input("Marka Adı", value=secilen_marka if 'secilen_marka' in locals() else "")
-                f_ay = st.selectbox("Dönem", ["Ocak 2026", "Şubat 2026", "Mart 2026"])
-                ig_t = st.number_input("Instagram Takipçi", min_value=0, format="%d")
-                fb_t = st.number_input("Facebook Takipçi", min_value=0, format="%d")
-                yt_t = st.number_input("YouTube Takipçi", min_value=0, format="%d")
-                
-                if st.form_submit_button("Güncelle ve Kaydet"):
-                    df = df[~((df['Marka'] == f_marka) & (df['Ay'] == f_ay))]
-                    yeni_data = [
-                        {'Marka': f_marka, 'Ay': f_ay, 'Platform': 'Instagram', 'Takipci': ig_t, 'Erisim': 1000},
-                        {'Marka': f_marka, 'Ay': f_ay, 'Platform': 'Facebook', 'Takipci': fb_t, 'Erisim': 1000},
-                        {'Marka': f_marka, 'Ay': f_ay, 'Platform': 'YouTube', 'Takipci': yt_t, 'Erisim': 1000}
-                    ]
-                    df = pd.concat([df, pd.DataFrame(yeni_data)], ignore_index=True)
-                    df.to_csv(DB_FILE, index=False)
-                    st.success("Veriler kaydedildi!")
+if not st.session_state.oturum:
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        if os.path.exists("logo.png"): st.image("logo.png", width=350)
+        with st.container():
+            st.markdown('<div class="login-box">', unsafe_allow_html=True)
+            u = st.text_input("Kullanıcı")
+            p = st.text_input("Şifre", type="password")
+            if st.button("Giriş", use_container_width=True):
+                if u == "admin" and p == "teknostore123":
+                    st.session_state.oturum = True
                     st.rerun()
-
-        if st.button("Güvenli Çıkış", use_container_width=True):
-            st.session_state.oturum_durumu = False
+        st.markdown('</div></div>', unsafe_allow_html=True)
+else:
+    df = veri_yukle()
+    with st.sidebar:
+        if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
+        menu = st.radio("Bölüm Seçin", ["🏠 Genel Trendler", "📊 Marka Detay Analizi", "⚙️ Veri Yönetimi"])
+        if st.button("Çıkış Yap"):
+            st.session_state.oturum = False
             st.rerun()
 
-    # --- 6. RAPORLAMA EKRANI ---
-    if sayfa_modu == "🏠 Genel Bakış":
-        st.title("🏠 Markaların Genel Durumu")
-        ozet = df.groupby('Marka')['Takipci'].sum().reset_index()
-        fig = px.bar(ozet, x='Marka', y='Takipci', color='Marka', title="Toplam Marka Gücü")
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        m_df = df[(df['Marka'] == secilen_marka) & (df['Ay'] == secilen_ay)]
-        st.title(f"📊 {secilen_marka} Analizi")
+    # --- 4. GENEL TRENDLER (TÜM MARKALAR) ---
+    if menu == "🏠 Genel Trendler":
+        st.title("🏠 Marka Performans Trendleri (2026)")
         
-        # Metrikler (Dinamik Renkli)
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Toplam Takipçi", f"{int(m_df['Takipci'].sum()):,}")
-        c2.metric("Ortalama Erişim", f"{int(m_df['Erisim'].mean()):,}")
-        c3.metric("Platform", secilen_marka)
+        # Takipçi Artış Grafiği (Çizgi)
+        trend_df = df.groupby(['Ay', 'Marka'])['Takipci'].sum().reset_index()
+        # Ayları sıralamak için
+        ay_sirasi = {'Ocak':1, 'Şubat':2, 'Mart':3, 'Nisan':4, 'Mayıs':5}
+        trend_df['Sira'] = trend_df['Ay'].map(ay_sirasi)
+        trend_df = trend_df.sort_values('Sira')
 
-        st.divider()
-        l, r = st.columns([2, 1])
-        with l:
-            st.subheader("Kanal Bazlı Takipçi")
-            fig_bar = px.bar(m_df, x='Platform', y='Takipci', color='Platform',
-                             color_discrete_map={'Instagram':'#E1306C', 'Facebook':'#4267B2', 'YouTube':'#FF0000'})
-            st.plotly_chart(fig_bar, use_container_width=True)
-        with r:
-            st.subheader("Takipçi Dağılımı")
-            fig_pie = px.pie(m_df, values='Takipci', names='Platform', hole=0.4)
+        fig_line = px.line(trend_df, x='Ay', y='Takipci', color='Marka', markers=True,
+                          title="Aylık Toplam Takipçi Değişimi", template="plotly_dark")
+        st.plotly_chart(fig_line, use_container_width=True)
+        
+
+    # --- 5. MARKA DETAY ANALİZİ ---
+    elif menu == "📊 Marka Detay Analizi":
+        m_sec = st.selectbox("Marka Seçin", df['Marka'].unique())
+        m_df = df[df['Marka'] == m_sec]
+        
+        st.title(f"📊 {m_sec} Analiz Raporu")
+        
+        tab1, tab2, tab3 = st.tabs(["📈 Takipçi & Etkileşim", "🎥 YouTube Özel", "🥧 Platform Dağılımı"])
+        
+        with tab1:
+            col1, col2 = st.columns(2)
+            # Takipçi Trendi
+            fig1 = px.area(m_df.groupby('Ay')['Takipci'].sum().reset_index(), x='Ay', y='Takipci', 
+                          title="Aylık Takipçi Trendi", color_discrete_sequence=['#00CC96'])
+            col1.plotly_chart(fig1, use_container_width=True)
+            
+            # Etkileşim Trendi
+            fig2 = px.line(m_df.groupby('Ay')['Etkilesim'].sum().reset_index(), x='Ay', y='Etkilesim', 
+                          title="Aylık Etkileşim Oranları", markers=True)
+            col2.plotly_chart(fig2, use_container_width=True)
+
+        with tab2:
+            st.subheader("🎥 YouTube Aylık İzlenme Performansı")
+            yt_df = m_df[m_df['Platform'] == 'YouTube']
+            if not yt_df.empty:
+                fig_yt = px.bar(yt_df, x='Ay', y='YT_Izlenme', title="YouTube İzlenme Sayıları",
+                               color='YT_Izlenme', color_continuous_scale='Reds')
+                st.plotly_chart(fig_yt, use_container_width=True)
+                
+            else:
+                st.warning("Bu markaya ait YouTube verisi bulunamadı.")
+
+        with tab3:
+            ay_filtre = st.selectbox("Dağılım İçin Ay Seçin", m_df['Ay'].unique())
+            pie_df = m_df[m_df['Ay'] == ay_filtre]
+            fig_pie = px.pie(pie_df, values='Takipci', names='Platform', hole=0.5, title=f"{ay_filtre} Platform Payı")
             st.plotly_chart(fig_pie, use_container_width=True)
+
+    # --- 6. VERİ YÖNETİMİ ---
+    elif menu == "⚙️ Veri Yönetimi":
+        st.title("⚙️ Veri Girişi ve Güncelleme")
+        with st.form("yeni_veri"):
+            c1, c2, c3 = st.columns(3)
+            marka = c1.text_input("Marka Adı")
+            ay = c2.selectbox("Ay", ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran"])
+            platform = c3.selectbox("Platform", ["Instagram", "Facebook", "YouTube"])
+            
+            v1, v2, v3 = st.columns(3)
+            takipci = v1.number_input("Takipçi Sayısı", min_value=0)
+            etkilesim = v2.number_input("Etkileşim Sayısı", min_value=0)
+            izlenme = v3.number_input("YT İzlenme (Sadece YouTube ise)", min_value=0)
+            
+            if st.form_submit_button("Veriyi Kaydet"):
+                # Mevcut kaydı silip yenisini ekle (Update mantığı)
+                df = df[~((df['Marka'] == marka) & (df['Ay'] == ay) & (df['Platform'] == platform))]
+                yeni = {'Marka': marka, 'Ay': ay, 'Platform': platform, 
+                        'Takipci': takipci, 'Etkilesim': etkilesim, 'YT_Izlenme': izlenme}
+                df = pd.concat([df, pd.DataFrame([yeni])], ignore_index=True)
+                df.to_csv(DB_FILE, index=False)
+                st.success("Veri başarıyla işlendi!")
+                st.rerun()
