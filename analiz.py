@@ -50,6 +50,30 @@ def veri_yukle():
         df.to_csv(DB_FILE, index=False)
         return df
     return pd.read_csv(DB_FILE)
+    # --- 2. VERİ TABANI SİSTEMİ --- (Burası sende zaten var, dokunma)
+DB_FILE = 'marka_veritabani_2026_final.csv'
+
+def veri_yukle():
+    if not os.path.exists(DB_FILE):
+        df = pd.DataFrame(columns=['Marka', 'Ay', 'Platform', 'Takipci', 'Etkilesim', 'YT_Izlenme'])
+        df.to_csv(DB_FILE, index=False)
+        return df
+    return pd.read_csv(DB_FILE)
+
+# --- 2.1 KULLANICI YÖNETİM SİSTEMİ (Burayı 53. satıra ekle) ---
+USER_DB = 'kullanicilar.csv'
+
+def kullanicilari_yukle():
+    if not os.path.exists(USER_DB):
+        # Varsayılan olarak seni 'admin' yapar
+        df_u = pd.DataFrame([{"user": "admin", "pass": "teknostore123", "role": "Ana Kullanıcı"}])
+        df_u.to_csv(USER_DB, index=False)
+        return df_u
+    return pd.read_csv(USER_DB)
+
+# Kullanıcı verilerini belleğe al
+df_kullanicilar = kullanicilari_yukle()
+KULLANICILAR = dict(zip(df_kullanicilar['user'], df_kullanicilar['pass']))
 
 # --- 3. KULLANICI YETKİLERİ ---
 KULLANICILAR = {
