@@ -6,41 +6,31 @@ import os
 # --- 1. SAYFA VE TEMA AYARLARI ---
 st.set_page_config(page_title="Teknostore Rapor Paneli", layout="wide")
 
-# Dinamik Tema CSS: Logoyu ortalar ve aydınlık moddaki metrik sorunlarını çözer
+# CSS: Logoyu ortalar ve metriklerin her iki modda (aydınlık/karanlık) okunmasını sağlar
 st.markdown("""
     <style>
-    /* Metrik Kartları: Hem Light hem Dark modda yazılar net görünür */
+    /* Metrik Kartları: Arka planı yumuşak gri yaparak yazıların okunmasını sağlar */
     div[data-testid="stMetric"] {
-        background-color: rgba(128, 128, 128, 0.08);
+        background-color: rgba(128, 128, 128, 0.1);
         border: 1px solid rgba(128, 128, 128, 0.2);
         padding: 20px;
         border-radius: 15px;
     }
     
-    /* Giriş Paneli Tasarımı */
+    /* Giriş Paneli ve Logo Konumu */
     .login-container {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        margin-top: 50px;
+        margin-top: 30px;
     }
     
-    /* Logo Stil Ayarı */
-    .logo-img {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-        width: 350px;
-        margin-bottom: -20px;
-    }
-
-    /* Giriş Kutusu */
     .login-box {
         width: 400px;
-        padding: 40px;
+        padding: 30px;
         border: 1px solid rgba(128, 128, 128, 0.2);
-        border-radius: 15px;
+        border-radius: 12px;
         background-color: transparent;
     }
     </style>
@@ -65,19 +55,18 @@ def veri_yukle():
 if "oturum_durumu" not in st.session_state:
     st.session_state.oturum_durumu = False
 
-# --- 4. GİRİŞ EKRANI (TAM İSTEDİĞİN GİBİ) ---
+# --- 4. GİRİŞ EKRANI (TAM İSTEDİĞİN GÖRSEL DÜZEN) ---
 if not st.session_state.oturum_durumu:
-    # Logo ve Formu Ortalayan Alan
-    _, col_mid, _ = st.columns([1, 2, 1])
+    st.markdown('<div class="login-container">', unsafe_allow_html=True)
     
+    # Logo Dosyası (Aynı klasörde logo.png olmalı)
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=400)
+    else:
+        st.title("TEKNOSTORE")
+    
+    _, col_mid, _ = st.columns([1, 2, 1])
     with col_mid:
-        st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        # Logo Dosyası Kontrolü
-        if os.path.exists("logo.png"):
-            st.image("logo.png", width=350)
-        else:
-            st.title("TEKNOSTORE")
-            
         st.markdown('<div class="login-box">', unsafe_allow_html=True)
         st.subheader("🔐 Yönetim Girişi")
         user = st.text_input("Kullanıcı Adı", placeholder="Kullanıcı adınız...")
@@ -88,8 +77,9 @@ if not st.session_state.oturum_durumu:
                 st.session_state.oturum_durumu = True
                 st.rerun()
             else:
-                st.error("Kullanıcı adı veya şifre hatalı!")
-        st.markdown('</div></div>', unsafe_allow_html=True)
+                st.error("Giriş bilgileri hatalı!")
+        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 else:
     # --- 5. ANA PANEL ---
@@ -98,7 +88,6 @@ else:
     with st.sidebar:
         if os.path.exists("logo.png"):
             st.image("logo.png", use_container_width=True)
-        
         st.title("🚀 Menü")
         sayfa_modu = st.radio("Görünüm Seçin:", ["🏠 Genel Bakış", "📊 Marka Bazlı Detay"])
         st.divider()
@@ -112,48 +101,50 @@ else:
             with st.form("admin_form"):
                 f_marka = st.text_input("Marka Adı", value=secilen_marka if 'secilen_marka' in locals() else "")
                 f_ay = st.selectbox("Dönem", ["Ocak 2026", "Şubat 2026", "Mart 2026"])
-                ig_t = st.number_input("Instagram Takipçi", min_value=0)
-                fb_t = st.number_input("Facebook Takipçi", min_value=0)
-                yt_t = st.number_input("YouTube Takipçi", min_value=0)
+                ig_t = st.number_input("Instagram Takipçi", min_value=0, format="%d")
+                fb_t = st.number_input("Facebook Takipçi", min_value=0, format="%d")
+                yt_t = st.number_input("YouTube Takipçi", min_value=0, format="%d")
                 
-                if st.form_submit_button("Verileri Kaydet"):
+                if st.form_submit_button("Güncelle ve Kaydet"):
                     df = df[~((df['Marka'] == f_marka) & (df['Ay'] == f_ay))]
-                    yeni_v = [
+                    yeni_data = [
                         {'Marka': f_marka, 'Ay': f_ay, 'Platform': 'Instagram', 'Takipci': ig_t, 'Erisim': 1000},
                         {'Marka': f_marka, 'Ay': f_ay, 'Platform': 'Facebook', 'Takipci': fb_t, 'Erisim': 1000},
                         {'Marka': f_marka, 'Ay': f_ay, 'Platform': 'YouTube', 'Takipci': yt_t, 'Erisim': 1000}
                     ]
-                    df = pd.concat([df, pd.DataFrame(yeni_v)], ignore_index=True)
+                    df = pd.concat([df, pd.DataFrame(yeni_data)], ignore_index=True)
                     df.to_csv(DB_FILE, index=False)
-                    st.success("Veriler güncellendi!")
+                    st.success("Veriler kaydedildi!")
                     st.rerun()
 
         if st.button("Güvenli Çıkış", use_container_width=True):
             st.session_state.oturum_durumu = False
             st.rerun()
 
-    # --- 6. RAPORLAMA ALANI ---
+    # --- 6. RAPORLAMA EKRANI ---
     if sayfa_modu == "🏠 Genel Bakış":
-        st.title("🏠 Markaların Genel Karşılaştırması")
-        genel_df = df.groupby('Marka')['Takipci'].sum().reset_index()
-        fig = px.bar(genel_df, x='Marka', y='Takipci', color='Marka', 
-                    title="Toplam Takipçi Sayıları (Mecra Bağımsız)")
+        st.title("🏠 Markaların Genel Durumu")
+        ozet = df.groupby('Marka')['Takipci'].sum().reset_index()
+        fig = px.bar(ozet, x='Marka', y='Takipci', color='Marka', title="Toplam Marka Gücü")
         st.plotly_chart(fig, use_container_width=True)
     else:
         m_df = df[(df['Marka'] == secilen_marka) & (df['Ay'] == secilen_ay)]
-        st.title(f"📊 {secilen_marka} - {secilen_ay} Analizi")
+        st.title(f"📊 {secilen_marka} Analizi")
         
+        # Metrikler (Dinamik Renkli)
         c1, c2, c3 = st.columns(3)
         c1.metric("Toplam Takipçi", f"{int(m_df['Takipci'].sum()):,}")
         c2.metric("Ortalama Erişim", f"{int(m_df['Erisim'].mean()):,}")
         c3.metric("Platform", secilen_marka)
 
         st.divider()
-        col_l, col_r = st.columns([2, 1])
-        with col_l:
+        l, r = st.columns([2, 1])
+        with l:
+            st.subheader("Kanal Bazlı Takipçi")
             fig_bar = px.bar(m_df, x='Platform', y='Takipci', color='Platform',
                              color_discrete_map={'Instagram':'#E1306C', 'Facebook':'#4267B2', 'YouTube':'#FF0000'})
             st.plotly_chart(fig_bar, use_container_width=True)
-        with col_r:
+        with r:
+            st.subheader("Takipçi Dağılımı")
             fig_pie = px.pie(m_df, values='Takipci', names='Platform', hole=0.4)
             st.plotly_chart(fig_pie, use_container_width=True)
