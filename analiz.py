@@ -7,97 +7,99 @@ import os
 st.set_page_config(
     page_title="Teknostore Rapor Paneli", 
     layout="wide",
-    initial_sidebar_state="collapsed" 
+    initial_sidebar_state="expanded" 
 )
 
 # Tarayıcıların (Android/Windows) otomatik çeviri yapıp linki bozmasını engeller
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
 
-# ÖZEL CSS: Giriş kutusunu küçültür ve ekranın ortasına hapseder
+# Gelişmiş Responsive CSS
 st.markdown("""
     <style>
-    /* Giriş sayfasında arka planı sadeleştir ve formu ortala */
-    .login-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 70vh; /* Ekranın ortasında durması için dikey boşluk */
-    }
-    
-    /* FORM KUTUSU: Genişliği 380px ile sınırladık (Minimum Boyut) */
-    .login-box {
-        max-width: 380px; 
-        width: 100%;
-        padding: 30px;
-        border: 1px solid rgba(128, 128, 128, 0.2);
-        border-radius: 15px;
-        background-color: rgba(255, 255, 255, 0.02);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-
-    /* Logo altındaki boşluk */
-    .logo-spacing {
-        margin-bottom: 20px;
-        text-align: center;
-    }
-    
-    /* Metrik kartları için genel ayar (İç sayfayı bozmaz) */
+    /* Metrik Kartları: Yazıların her modda okunmasını sağlar */
     div[data-testid="stMetric"] {
         background-color: rgba(128, 128, 128, 0.08);
         border: 1px solid rgba(128, 128, 128, 0.2);
         padding: 15px;
         border-radius: 12px;
     }
+    
+    /* Giriş Paneli: Tüm cihazlarda ortalar ve sığdırır */
+    .login-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-top: 30px;
+    }
+    
+    .login-box {
+        max-width: 400px;
+        width: 100%;
+        padding: 25px;
+        border: 1px solid rgba(128, 128, 128, 0.2);
+        border-radius: 15px;
+        background-color: transparent;
+    }
+
+    /* Mobilde grafiklerin taşmasını önler */
+    .stPlotlyChart { width: 100% !important; }
+    iframe { max-width: 100% !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. KULLANICI YETKİLERİ ---
-KULLANICILAR = {
-    "admin": "teknostore123",
-    "pazarlama": "satis2026",
-    "analiz": "rapor456"
-}
+# --- 2. VERİ TABANI SİSTEMİ ---
+DB_FILE = 'marka_veritabani_2026_final.csv'
+
+def veri_yukle():
+    if not os.path.exists(DB_FILE):
+        markalar = ['Teknostore', 'Aula', 'Nowgo']
+        aylar = ['Ocak 2026', 'Şubat 2026', 'Mart 2026']
+        rows = []
+        for m in markalar:
+            for a in aylar:
+                for p in ['Instagram', 'Facebook', 'YouTube']:
+                    rows.append({
+                        'Marka': m, 'Ay': a, 'Platform': p, 
+                        'Takipci': 1000, 'Etkilesim': 100, 
+                        'YT_Izlenme': 500 if p == 'YouTube' else 0
+                    })
+        df = pd.DataFrame(rows)
+        df.to_csv(DB_FILE, index=False)
+        return df
+    return pd.read_csv(DB_FILE)
 
 # --- 3. OTURUM YÖNETİMİ ---
 if "oturum_durumu" not in st.session_state:
     st.session_state.oturum_durumu = False
-if "aktif_kullanici" not in st.session_state:
-    st.session_state.aktif_kullanici = ""
 
-# --- 4. GİRİŞ EKRANI (DERLİ TOPLU TASARIM) ---
+# --- 4. GİRİŞ EKRANI (LOGOLU VE HATASIZ) ---
 if not st.session_state.oturum_durumu:
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     
-    # Logo
-    st.markdown('<div class="logo-spacing">', unsafe_allow_html=True)
+    # Logo Dosyası Kontrolü
     if os.path.exists("logo.png"):
-        st.image("logo.png", width=320) # Logonun ideal boyutu
+        st.image("logo.png", width=380)
     else:
         st.title("TEKNOSTORE")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Giriş Kutusu (Dar ve Ortalanmış)
-    _, col_mid, _ = st.columns([1, 1.5, 1]) # Orta kolonu kullanarak daraltıyoruz
+        
+    _, col_mid, _ = st.columns([1, 2, 1])
     with col_mid:
         st.markdown('<div class="login-box">', unsafe_allow_html=True)
-        st.markdown("<h3 style='text-align: center;'>🔐 Yönetim Girişi</h3>", unsafe_allow_html=True)
-        
+        st.subheader("🔐 Yönetim Girişi")
         u = st.text_input("Kullanıcı Adı", placeholder="Kullanıcı adınız...")
         p = st.text_input("Şifre", type="password", placeholder="Şifreniz...")
         
         if st.button("Sisteme Giriş Yap", use_container_width=True):
-            if u in KULLANICILAR and KULLANICILAR[u] == p:
+            if u == "admin" and p == "teknostore123":
                 st.session_state.oturum_durumu = True
-                st.session_state.aktif_kullanici = u
                 st.rerun()
             else:
-                st.error("Giriş bilgileri hatalı!")
+                st.error("Kullanıcı adı veya şifre hatalı!")
         st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    
     # --- 5. ANA PANEL ---
     df = veri_yukle()
     
