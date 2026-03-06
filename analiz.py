@@ -61,7 +61,7 @@ if not st.session_state.oturum_durumu:
     # O DİKDÖRTGENİ KALDIRAN BÖLÜM: 
     # Sadece dosya gerçekten varsa st.image çalışır, yoksa hiçbir alan kaplamaz.
     if os.path.exists("logo.png"):
-        st.image("logo.png", width=250)
+       
     
     # Form Alanı
     _, col_mid, _ = st.columns([1, 1.2, 1])
