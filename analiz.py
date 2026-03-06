@@ -14,6 +14,7 @@ st.markdown("""
     .login-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; margin-top: 20px; }
     .login-box { max-width: 360px; width: 100%; padding: 25px; border: 1px solid rgba(128, 128, 128, 0.2); border-radius: 12px; }
     div[data-testid="stMetric"] { background-color: rgba(128, 128, 128, 0.08); border: 1px solid rgba(128, 128, 128, 0.2); padding: 15px; border-radius: 12px; }
+    .plat-card { background: #f8f9fb; padding: 10px; border-radius: 10px; border-left: 5px solid #ff4b4b; margin: 10px 0; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -131,9 +132,17 @@ else:
     if sayfa_modu == "🏠 Genel Bakış":
         st.title("🏠 Tüm Markaların Genel Trendi")
         if not df.empty:
-            trend_df = df.groupby(['Ay', 'Marka'])['Takipci'].sum().reset_index()
-            fig_trend = px.line(trend_df, x='Ay', y='Takipci', color='Marka', markers=True)
-            st.plotly_chart(fig_trend, use_container_width=True)
+            col_genel1, col_genel2 = st.columns(2)
+            with col_genel1:
+                st.subheader("👥 Takipçi Trendi")
+                trend_df = df.groupby(['Ay', 'Marka'])['Takipci'].sum().reset_index()
+                fig_trend = px.line(trend_df, x='Ay', y='Takipci', color='Marka', markers=True)
+                st.plotly_chart(fig_trend, use_container_width=True)
+            with col_genel2:
+                st.subheader("🔥 Etkileşim Trendi")
+                etk_trend_df = df.groupby(['Ay', 'Marka'])['Etkilesim'].sum().reset_index()
+                fig_etk_trend = px.line(etk_trend_df, x='Ay', y='Etkilesim', color='Marka', markers=True)
+                st.plotly_chart(fig_etk_trend, use_container_width=True)
         
     else:
         m_df = df[df['Marka'] == secilen_marka]
@@ -156,13 +165,28 @@ else:
             st.plotly_chart(fig2, use_container_width=True)
 
         st.divider()
-        st.subheader("🌐 Platform Bazlı Detaylı Analiz")
-        col_p1, col_p2 = st.columns(2)
-        with col_p1: # Platformlara Göre Takipçi Kıyaslaması
-            fig_p_takipci = px.bar(m_ay_df, x='Platform', y='Takipci', color='Platform', title=f"{secilen_ay} Platform Bazlı Takipçi", text_auto='.2s')
+        st.subheader("📱 Platformlara Göre Özel Analiz")
+        
+        # Her platform için ayrı satır ve grafikler
+        for plat in ["Instagram", "Facebook", "YouTube"]:
+            st.markdown(f'<div class="plat-card">{plat.upper()} Analizi</div>', unsafe_allow_html=True)
+            p_data = m_ay_df[m_ay_df['Platform'] == plat]
+            pc1, pc2 = st.columns(2)
+            with pc1:
+                fig_pt = px.bar(p_data, x='Platform', y='Takipci', title=f"{plat} Takipçi", color_discrete_sequence=['#4B8BBE'])
+                st.plotly_chart(fig_pt, use_container_width=True)
+            with pc2:
+                fig_pe = px.bar(p_data, x='Platform', y='Etkilesim', title=f"{plat} Etkileşim", color_discrete_sequence=['#FFD43B'])
+                st.plotly_chart(fig_pe, use_container_width=True)
+
+        st.divider()
+        st.subheader("🌐 Platformlar Arası Kıyaslama (Tek Grafik)")
+        col_comp1, col_comp2 = st.columns(2)
+        with col_comp1:
+            fig_p_takipci = px.bar(m_ay_df, x='Platform', y='Takipci', color='Platform', title=f"{secilen_ay} Tüm Takipçiler", text_auto='.2s')
             st.plotly_chart(fig_p_takipci, use_container_width=True)
-        with col_p2: # Platformlara Göre Etkileşim Kıyaslaması
-            fig_p_etkilesim = px.bar(m_ay_df, x='Platform', y='Etkilesim', color='Platform', title=f"{secilen_ay} Platform Bazlı Etkileşim", text_auto='.2s')
+        with col_comp2:
+            fig_p_etkilesim = px.bar(m_ay_df, x='Platform', y='Etkilesim', color='Platform', title=f"{secilen_ay} Tüm Etkileşimler", text_auto='.2s')
             st.plotly_chart(fig_p_etkilesim, use_container_width=True)
 
         st.divider()
