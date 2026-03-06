@@ -72,3 +72,50 @@ with k1:
 with k2:
     st.subheader("📝 Strateji Notları")
     st.info(f"{marka} için bu hafta video içerik üretimi artırılmalı ve yorumlara dönüş hızı optimize edilmeli.")
+import streamlit as st
+import pandas as pd
+
+# 1. KULLANICI VE ŞİFRE YÖNETİMİ
+# Not: Normalde bunlar bir veritabanında tutulur, başlangıç için sözlük yapıyoruz.
+credentials = {
+    "usernames": {
+        "admin": {"name": "Yönetici", "password": "123"}, # Şifreleri güvenli hale getireceğiz
+        "teknostore_user": {"name": "Teknostore Yetkilisi", "password": "456"}
+    }
+}
+
+# --- GİRİŞ EKRANI ---
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if not st.session_state.logged_in:
+    st.title("🔐 Marka Yönetim Paneli")
+    user = st.text_input("Kullanıcı Adı")
+    pw = st.text_input("Şifre", type="password")
+    if st.button("Giriş Yap"):
+        if user in credentials["usernames"] and credentials["usernames"][user]["password"] == pw:
+            st.session_state.logged_in = True
+            st.rerun()
+        else:
+            st.error("Hatalı kullanıcı adı veya şifre!")
+else:
+    # --- YÖNETİM VE ANALİZ ALANI ---
+    st.sidebar.button("Çıkış Yap", on_click=lambda: st.session_state.update({"logged_in": False}))
+    
+    tab1, tab2 = st.tabs(["📊 Analiz Paneli", "⚙️ Veri Yönetimi (Admin)"])
+
+    with tab1:
+        st.header("Marka Performansları")
+        # Mevcut grafik kodların buraya gelecek...
+
+    with tab2:
+        st.header("🆕 Yeni Veri / Marka Ekle")
+        with st.form("marka_ekle"):
+            yeni_marka = st.text_input("Marka Adı")
+            yeni_takipci = st.number_input("Takipçi Sayısı", min_value=0)
+            yeni_erisim = st.number_input("Erişim Sayısı", min_value=0)
+            
+            submit = st.form_submit_button("Kaydet ve Güncelle")
+            if submit:
+                st.success(f"{yeni_marka} başarıyla eklendi/güncellendi!")
+                # Burada veriyi bir CSV dosyasına kaydedeceğiz ki kalıcı olsun.
