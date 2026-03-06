@@ -79,7 +79,7 @@ if not st.session_state.oturum_durumu:
     
     # Logo Dosyası Kontrolü
     if os.path.exists("logo.png"):
-        st.image("logo.png", width=380)
+        st.image("https://cdn.imagevisit.com/2026/03/06/logo.png", width=380)
     else:
         st.title("TEKNOSTORE")
         
