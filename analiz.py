@@ -147,17 +147,6 @@ else:
             secilen_ay = st.selectbox("Ay Seçin:", df['Ay'].unique())
         
         st.divider()
-        if st.session_state.aktif_kullanici == "admin":
-            with st.expander("👤 Ekip Arkadaşı Yönetimi"):
-                new_u = st.text_input("Yeni Kullanıcı Adı", key="admin_new_u")
-                new_p = st.text_input("Yeni Şifre", type="password", key="admin_new_p")
-                if st.button("Sisteme Tanımla"):
-                    if new_u and new_p:
-                        yeni_uye = pd.DataFrame([{"user": new_u, "pass": new_p, "role": "Ekip Üyesi"}])
-                        df_kullanicilar = pd.concat([df_kullanicilar, yeni_uye], ignore_index=True)
-                        df_kullanicilar.to_csv(USER_DB, index=False)
-                        st.success(f"{new_u} başarıyla eklendi!")
-                        st.rerun()
                         
         with st.expander("🛠️ Yeni Marka / Veri Güncelle"):
             with st.form("admin_form"):
