@@ -50,6 +50,46 @@ def veri_yukle():
         df.to_csv(DB_FILE, index=False)
         return df
     return pd.read_csv(DB_FILE)
+    # --- 2. KULLANICI YETKİLERİ VE VERİ TABANI ---
+# Kullanıcıları kalıcı olarak saklamak için yeni bir dosya
+USER_DB = 'kullanicilar.csv'
+
+def kullanicilari_yukle():
+    if not os.path.exists(USER_DB):
+        # İlk kurulumda ana kullanıcıyı (Seni) oluşturur
+        df_users = pd.DataFrame([{"user": "admin", "pass": "teknostore123", "role": "Ana Kullanıcı"}])
+        df_users.to_csv(USER_DB, index=False)
+        return df_users
+    return pd.read_csv(USER_DB)
+
+# Sisteme kayıtlı kullanıcıları çek
+df_kullanicilar = kullanicilari_yukle()
+KULLANICILAR = dict(zip(df_kullanicilar['user'], df_kullanicilar['pass']))
+ROLLER = dict(zip(df_kullanicilar['user'], df_kullanicilar['role']))
+
+# --- YAN MENÜ: KULLANICI EKLEME PANELİ (Sadece Admin Görür) ---
+if st.session_state.oturum_durumu:
+    with st.sidebar:
+        st.divider()
+        # Sadece "admin" giriş yaptıysa bu panel görünür
+        if st.session_state.aktif_kullanici == "admin":
+            with st.expander("👤 Ekip Arkadaşı Ekle"):
+                new_u = st.text_input("Yeni Kullanıcı Adı")
+                new_p = st.text_input("Yeni Şifre", type="password")
+                new_r = st.selectbox("Yetki Seviyesi", ["Ekip Üyesi", "Yönetici"])
+                
+                if st.button("Kullanıcıyı Tanımla"):
+                    if new_u and new_p:
+                        if new_u not in df_kullanicilar['user'].values:
+                            yeni_uye = pd.DataFrame([{"user": new_u, "pass": new_p, "role": new_r}])
+                            df_kullanicilar = pd.concat([df_kullanicilar, yeni_uye], ignore_index=True)
+                            df_kullanicilar.to_csv(USER_DB, index=False)
+                            st.success(f"{new_u} başarıyla eklendi! Lütfen sayfayı yenileyin.")
+                            st.rerun()
+                        else:
+                            st.warning("Bu kullanıcı zaten mevcut.")
+                    else:
+                        st.error("Lütfen tüm alanları doldurun.")
 
 # --- 3. KULLANICI YETKİLERİ ---
 KULLANICILAR = {
@@ -107,6 +147,22 @@ else:
             secilen_ay = st.selectbox("Ay Seçin:", df['Ay'].unique())
         
         st.divider()
+        # 149. satırdaki divider'dan hemen sonra:
+        st.divider() 
+        
+        # Sadece sen (admin) girdiğinde bu panel görünür
+        if st.session_state.aktif_kullanici == "admin":
+            with st.expander("👤 Ekip Arkadaşı Yönetimi"):
+                new_u = st.text_input("Yeni Kullanıcı Adı", key="admin_new_u")
+                new_p = st.text_input("Yeni Şifre", type="password", key="admin_new_p")
+                if st.button("Sisteme Tanımla"):
+                    if new_u and new_p:
+                        yeni_uye = pd.DataFrame([{"user": new_u, "pass": new_p, "role": "Ekip Üyesi"}])
+                        df_kullanicilar = pd.concat([df_kullanicilar, yeni_uye], ignore_index=True)
+                        df_kullanicilar.to_csv(USER_DB, index=False)
+                        st.success(f"{new_u} başarıyla eklendi!")
+                        st.rerun()
+                        
         with st.expander("🛠️ Yeni Marka / Veri Güncelle"):
             with st.form("admin_form"):
                 f_secim = st.selectbox("Marka Seç", ["--- Yeni Marka Ekle ---"] + df['Marka'].unique().tolist())
