@@ -25,10 +25,13 @@ SESSION_FILE = 'active_session.txt'
 
 def veri_yukle():
     if not os.path.exists(DB_FILE):
-        df = pd.DataFrame(columns=['Marka', 'Ay', 'Platform', 'Takipci', 'Etkilesim', 'YT_Izlenme'])
+        df = pd.DataFrame(columns=['Marka', 'Ay', 'Platform', 'Takipci', 'Etkilesim', 'YT_Izlenme', 'Gun'])
         df.to_csv(DB_FILE, index=False)
         return df
-    return pd.read_csv(DB_FILE)
+    df = pd.read_csv(DB_FILE)
+    if 'Gun' not in df.columns:
+        df['Gun'] = 1
+    return df
 
 def kullanicilari_yukle():
     if not os.path.exists(USER_DB):
@@ -37,19 +40,20 @@ def kullanicilari_yukle():
         return df_u
     return pd.read_csv(USER_DB)
 
-# --- 3. OTURUM KONTROLÜ (Girişi Hatırlama) ---
+# --- 3. OTURUM KONTROLÜ ---
+if "oturum_durumu" not in st.session_state:
+    st.session_state.oturum_durumu = False
+
 df_kullanicilar = kullanicilari_yukle()
 KULLANICILAR = dict(zip(df_kullanicilar['user'], df_kullanicilar['pass']))
 
-if "oturum_durumu" not in st.session_state:
+if not st.session_state.oturum_durumu:
     if os.path.exists(SESSION_FILE):
         with open(SESSION_FILE, 'r') as f:
             saved_user = f.read().strip()
             if saved_user in KULLANICILAR:
                 st.session_state.oturum_durumu = True
                 st.session_state.aktif_kullanici = saved_user
-            else: st.session_state.oturum_durumu = False
-    else: st.session_state.oturum_durumu = False
 
 # --- 4. GİRİŞ EKRANI ---
 if not st.session_state.oturum_durumu:
@@ -100,7 +104,8 @@ else:
         
         if sayfa_modu == "📊 Marka Bazlı Detay":
             st.divider()
-            secilen_marka = st.selectbox("Marka Seçin:", df['Marka'].unique() if not df.empty else ["Veri Yok"])
+            marka_listesi = df['Marka'].unique().tolist() if not df.empty else ["Veri Yok"]
+            secilen_marka = st.selectbox("Marka Seçin:", marka_listesi)
             secilen_ay = st.selectbox("Ay Seçin:", AYLAR_LISTESI)
         
         st.divider()
@@ -110,14 +115,17 @@ else:
                 f_yeni_ad = st.text_input("Yeni Marka Adı")
                 f_ay = st.selectbox("Dönem", AYLAR_LISTESI)
                 f_plat = st.selectbox("Platform", ["Instagram", "Facebook", "YouTube"])
-                f_takipci = st.number_input("Takipçi", min_value=0)
-                f_etkilesim = st.number_input("Etkileşim", min_value=0)
-                f_izlenme = st.number_input("YT İzlenme", min_value=0)
+                
+                # 100 BİN ÜZERİ DEĞERLER İÇİN GÜNCELLENDİ
+                f_takipci = st.number_input("Takipçi", min_value=0, max_value=10000000, step=100)
+                f_etkilesim = st.number_input("Etkileşim", min_value=0, max_value=10000000, step=100)
+                f_izlenme = st.number_input("YT İzlenme", min_value=0, max_value=10000000, step=100)
+                
                 if st.form_submit_button("Sisteme Kaydet"):
                     final_m = f_yeni_ad if f_secim == "--- Yeni ---" else f_secim
                     if final_m:
                         df = df[~((df['Marka'] == final_m) & (df['Ay'] == f_ay) & (df['Platform'] == f_plat))]
-                        yeni = {'Marka': final_m, 'Ay': f_ay, 'Platform': f_plat, 'Takipci': f_takipci, 'Etkilesim': f_etkilesim, 'YT_Izlenme': f_izlenme}
+                        yeni = {'Marka': final_m, 'Ay': f_ay, 'Platform': f_plat, 'Takipci': f_takipci, 'Etkilesim': f_etkilesim, 'YT_Izlenme': f_izlenme, 'Gun': 1}
                         df = pd.concat([df, pd.DataFrame([yeni])], ignore_index=True)
                         df.to_csv(DB_FILE, index=False)
                         st.success("Kaydedildi!")
@@ -136,13 +144,11 @@ else:
             with col_genel1:
                 st.subheader("👥 Takipçi Trendi")
                 trend_df = df.groupby(['Ay', 'Marka'])['Takipci'].sum().reset_index()
-                fig_trend = px.line(trend_df, x='Ay', y='Takipci', color='Marka', markers=True)
-                st.plotly_chart(fig_trend, use_container_width=True)
+                st.plotly_chart(px.line(trend_df, x='Ay', y='Takipci', color='Marka', markers=True), use_container_width=True)
             with col_genel2:
                 st.subheader("🔥 Etkileşim Trendi")
                 etk_trend_df = df.groupby(['Ay', 'Marka'])['Etkilesim'].sum().reset_index()
-                fig_etk_trend = px.line(etk_trend_df, x='Ay', y='Etkilesim', color='Marka', markers=True)
-                st.plotly_chart(fig_etk_trend, use_container_width=True)
+                st.plotly_chart(px.line(etk_trend_df, x='Ay', y='Etkilesim', color='Marka', markers=True), use_container_width=True)
         
     else:
         m_df = df[df['Marka'] == secilen_marka]
@@ -166,40 +172,32 @@ else:
 
         st.divider()
         st.subheader("📱 Platformlara Göre Özel Analiz")
-        
-        # Her platform için ayrı satır ve grafikler
         for plat in ["Instagram", "Facebook", "YouTube"]:
             st.markdown(f'<div class="plat-card">{plat.upper()} Analizi</div>', unsafe_allow_html=True)
             p_data = m_ay_df[m_ay_df['Platform'] == plat]
             pc1, pc2 = st.columns(2)
             with pc1:
-                fig_pt = px.bar(p_data, x='Platform', y='Takipci', title=f"{plat} Takipçi", color_discrete_sequence=['#4B8BBE'])
-                st.plotly_chart(fig_pt, use_container_width=True)
+                st.plotly_chart(px.bar(p_data, x='Platform', y='Takipci', title=f"{plat} Takipçi", color_discrete_sequence=['#4B8BBE']), use_container_width=True)
             with pc2:
-                fig_pe = px.bar(p_data, x='Platform', y='Etkilesim', title=f"{plat} Etkileşim", color_discrete_sequence=['#FFD43B'])
-                st.plotly_chart(fig_pe, use_container_width=True)
+                st.plotly_chart(px.bar(p_data, x='Platform', y='Etkilesim', title=f"{plat} Etkileşim", color_discrete_sequence=['#FFD43B']), use_container_width=True)
 
         st.divider()
         st.subheader("🌐 Platformlar Arası Kıyaslama (Tek Grafik)")
         col_comp1, col_comp2 = st.columns(2)
         with col_comp1:
-            fig_p_takipci = px.bar(m_ay_df, x='Platform', y='Takipci', color='Platform', title=f"{secilen_ay} Tüm Takipçiler", text_auto='.2s')
-            st.plotly_chart(fig_p_takipci, use_container_width=True)
+            st.plotly_chart(px.bar(m_ay_df, x='Platform', y='Takipci', color='Platform', title=f"{secilen_ay} Tüm Takipçiler", text_auto='.2s'), use_container_width=True)
         with col_comp2:
-            fig_p_etkilesim = px.bar(m_ay_df, x='Platform', y='Etkilesim', color='Platform', title=f"{secilen_ay} Tüm Etkileşimler", text_auto='.2s')
-            st.plotly_chart(fig_p_etkilesim, use_container_width=True)
+            st.plotly_chart(px.bar(m_ay_df, x='Platform', y='Etkilesim', color='Platform', title=f"{secilen_ay} Tüm Etkileşimler", text_auto='.2s'), use_container_width=True)
 
         st.divider()
         col_b1, col_b2 = st.columns([2, 1])
-        with col_b1: # Orijinal YouTube Bar Korundu
+        with col_b1:
             st.subheader("🎥 YouTube İzlenme Analizi")
             yt_data = m_df[m_df['Platform'] == 'YouTube']
             if not yt_data.empty:
-                fig_yt = px.bar(yt_data, x='Ay', y='YT_Izlenme', title="Aylık YouTube İzlenme Sayıları", color='YT_Izlenme', color_continuous_scale='Reds')
-                st.plotly_chart(fig_yt, use_container_width=True)
+                st.plotly_chart(px.bar(yt_data, x='Ay', y='YT_Izlenme', title="Aylık YouTube İzlenme Sayıları", color='YT_Izlenme', color_continuous_scale='Reds'), use_container_width=True)
             else: st.info("YouTube verisi bulunamadı.")
         
-        with col_b2: # Orijinal Pasta Grafiği
+        with col_b2:
             st.subheader("🥧 Platform Dağılımı")
-            fig_pie = px.pie(m_ay_df, values='Takipci', names='Platform', hole=0.4, title=f"{secilen_ay} Takipçi Payı")
-            st.plotly_chart(fig_pie, use_container_width=True)
+            st.plotly_chart(px.pie(m_ay_df, values='Takipci', names='Platform', hole=0.4, title=f"{secilen_ay} Takipçi Payı"), use_container_width=True)
