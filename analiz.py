@@ -147,8 +147,6 @@ else:
             secilen_ay = st.selectbox("Ay Seçin:", df['Ay'].unique())
         
         st.divider()
-        # 149. satırdaki divider'dan hemen sonra:
-        st.divider() 
         
         # Sadece sen (admin) girdiğinde bu panel görünür
         if st.session_state.aktif_kullanici == "admin":
