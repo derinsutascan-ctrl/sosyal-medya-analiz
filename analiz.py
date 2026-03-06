@@ -3,67 +3,74 @@ import pandas as pd
 import plotly.express as px
 import os
 
-# --- 1. SAYFA AYARLARI ---
+# --- 1. SAYFA VE TEMA AYARLARI ---
 st.set_page_config(
     page_title="Teknostore Rapor Paneli", 
     layout="wide",
     initial_sidebar_state="collapsed" 
 )
 
-# 404 Hatasını önlemek için (Android/Windows uyumu)
+# Tarayıcı çeviri hatalarını (404) önler
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
 
-# ÖZEL CSS: Dikdörtgeni yok eder ve formu en yukarı çeker
+# CSS: Formu yukarı çeker, dikdörtgeni siler ve iç sayfa tasarımını korur
 st.markdown("""
     <style>
-    /* Streamlit'in varsayılan üst boşluğunu sıfırlayarak formu yukarı çeker */
-    .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 0rem !important;
-    }
-    
-    .login-container {
+    .block-container { padding-top: 1rem !important; }
+    .login-wrapper {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        margin-top: 20px; /* En üste çok yapışmaması için küçük bir pay */
+        margin-top: 20px;
     }
-    
     .login-box {
         max-width: 360px; 
         width: 100%;
         padding: 25px;
         border: 1px solid rgba(128, 128, 128, 0.2);
         border-radius: 12px;
-        background-color: transparent;
+    }
+    div[data-testid="stMetric"] {
+        background-color: rgba(128, 128, 128, 0.08);
+        border: 1px solid rgba(128, 128, 128, 0.2);
+        padding: 15px;
+        border-radius: 12px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. KULLANICI YETKİLERİ ---
+# --- 2. VERİ TABANI SİSTEMİ ---
+DB_FILE = 'marka_veritabani_2026_final.csv'
+
+def veri_yukle():
+    if not os.path.exists(DB_FILE):
+        # Varsayılan boş bir yapı oluşturur
+        df = pd.DataFrame(columns=['Marka', 'Ay', 'Platform', 'Takipci', 'Etkilesim', 'YT_Izlenme'])
+        df.to_csv(DB_FILE, index=False)
+        return df
+    return pd.read_csv(DB_FILE)
+
+# --- 3. KULLANICI YETKİLERİ ---
 KULLANICILAR = {
     "admin": "teknostore123",
     "pazarlama": "satis2026",
     "analiz": "rapor456"
 }
 
-# --- 3. OTURUM YÖNETİMİ ---
 if "oturum_durumu" not in st.session_state:
     st.session_state.oturum_durumu = False
 if "aktif_kullanici" not in st.session_state:
     st.session_state.aktif_kullanici = ""
 
-# --- 4. GİRİŞ EKRANI (TAMAMEN TEMİZLENMİŞ VE YUKARI TAŞINMIŞ) ---
+# --- 4. GİRİŞ EKRANI (DÜZENLENMİŞ) ---
 if not st.session_state.oturum_durumu:
-    st.markdown('<div class="login-container">', unsafe_allow_html=True)
+    st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
     
-    # O DİKDÖRTGENİ KALDIRAN BÖLÜM: 
-    # Sadece dosya gerçekten varsa st.image çalışır, yoksa hiçbir alan kaplamaz.
+    # Dikdörtgeni kaldıran kontrol: Sadece dosya varsa çalışır
     if os.path.exists("logo.png"):
         st.image("logo.png", width=250)
     
-    # Form Alanı
     _, col_mid, _ = st.columns([1, 1.2, 1])
     with col_mid:
         st.markdown('<div class="login-box">', unsafe_allow_html=True)
@@ -78,19 +85,20 @@ if not st.session_state.oturum_durumu:
                 st.session_state.aktif_kullanici = u
                 st.rerun()
             else:
-                st.error("Hatalı kullanıcı adı veya şifre!")
+                st.error("Kullanıcı adı veya şifre hatalı!")
         st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    
-    # --- 5. ANA PANEL ---
+    # --- 5. ANA PANEL (SENİN KODUNUN DEVAMI) ---
     df = veri_yukle()
     
     with st.sidebar:
         if os.path.exists("logo.png"):
             st.image("logo.png", use_container_width=True)
         st.title("🚀 Menü")
+        st.info(f"👤 Kullanıcı: {st.session_state.aktif_kullanici}") # Kimin girdiğini gösterir
+        
         sayfa_modu = st.radio("Görünüm Seçin:", ["🏠 Genel Bakış", "📊 Marka Bazlı Detay"])
         
         if sayfa_modu == "📊 Marka Bazlı Detay":
@@ -99,7 +107,6 @@ else:
             secilen_ay = st.selectbox("Ay Seçin:", df['Ay'].unique())
         
         st.divider()
-        # VERİ VE MARKA YÖNETİMİ
         with st.expander("🛠️ Yeni Marka / Veri Güncelle"):
             with st.form("admin_form"):
                 f_secim = st.selectbox("Marka Seç", ["--- Yeni Marka Ekle ---"] + df['Marka'].unique().tolist())
@@ -131,22 +138,18 @@ else:
         fig_trend = px.line(trend_df, x='Ay', y='Takipci', color='Marka', markers=True, title="Aylık Toplam Takipçi Değişimi")
         st.plotly_chart(fig_trend, use_container_width=True)
         
-
     else:
         m_df = df[df['Marka'] == secilen_marka]
         m_ay_df = m_df[m_df['Ay'] == secilen_ay]
         
         st.title(f"📊 {secilen_marka} Performans Analizi")
         
-        # Üst Metrikler (Dinamik ve Okunabilir)
         c1, c2, c3 = st.columns(3)
         c1.metric("Toplam Takipçi", f"{int(m_ay_df['Takipci'].sum()):,}")
         c2.metric("Toplam Etkileşim", f"{int(m_ay_df['Etkilesim'].sum()):,}")
         c3.metric("Seçilen Ay", secilen_ay)
 
         st.divider()
-        
-        # 1. SATIR: AYDAN AYA TRENDLER
         st.subheader("📈 Aylık Gelişim Trendleri")
         col_t1, col_t2 = st.columns(2)
         with col_t1:
@@ -157,8 +160,6 @@ else:
             st.plotly_chart(fig2, use_container_width=True)
 
         st.divider()
-        
-        # 2. SATIR: YOUTUBE ÖZEL VE DAĞILIM
         col_b1, col_b2 = st.columns([2, 1])
         with col_b1:
             st.subheader("🎥 YouTube İzlenme Analizi")
