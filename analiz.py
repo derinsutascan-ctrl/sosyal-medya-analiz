@@ -147,8 +147,6 @@ else:
             secilen_ay = st.selectbox("Ay Seçin:", df['Ay'].unique())
         
         st.divider()
-        
-        # Sadece sen (admin) girdiğinde bu panel görünür
         if st.session_state.aktif_kullanici == "admin":
             with st.expander("👤 Ekip Arkadaşı Yönetimi"):
                 new_u = st.text_input("Yeni Kullanıcı Adı", key="admin_new_u")
