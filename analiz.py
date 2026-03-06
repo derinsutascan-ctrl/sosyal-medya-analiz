@@ -3,8 +3,8 @@ import pandas as pd
 import plotly.express as px
 import os
 
-# --- 1. SAYFA VE TEMA AYARLARI (Orijinal Tasarım) ---
-st.set_page_config(page_title="Marka Rapor Paneli", layout="wide", initial_sidebar_state="collapsed")
+# --- 1. SAYFA VE TEMA AYARLARI ---
+st.set_page_config(page_title="Teknostore Rapor Paneli", layout="wide", initial_sidebar_state="collapsed")
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
 
 # CSS: Tasarımını Birebir Korur
@@ -14,7 +14,7 @@ st.markdown("""
     .login-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; margin-top: 20px; }
     .login-box { max-width: 360px; width: 100%; padding: 25px; border: 1px solid rgba(128, 128, 128, 0.2); border-radius: 12px; }
     div[data-testid="stMetric"] { background-color: rgba(128, 128, 128, 0.08); border: 1px solid rgba(128, 128, 128, 0.2); padding: 15px; border-radius: 12px; }
-    .plat-card { background: #f8f9fb; padding: 10px; border-radius: 10px; border-left: 5px solid #ff4b4b; margin: 10px 0; font-weight: bold; }
+    .plat-card { background: #f8f9fb; padding: 10px; border-radius: 10px; border-left: 5px solid #ff4b4b; margin: 20px 0 10px 0; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -53,7 +53,7 @@ if not st.session_state.oturum_durumu and os.path.exists(SESSION_FILE):
             st.session_state.oturum_durumu = True
             st.session_state.aktif_kullanici = saved_user
 
-# --- 4. GİRİŞ EKRANI (Orijinal Stil) ---
+# --- 4. GİRİŞ EKRANI ---
 if not st.session_state.oturum_durumu:
     st.markdown('<div class="login-wrapper">', unsafe_allow_html=True)
     if os.path.exists("logo.png"): st.image("logo.png", width=250)
@@ -85,7 +85,6 @@ else:
         st.title("🚀 Menü")
         st.info(f"👤 Kullanıcı: {st.session_state.aktif_kullanici}")
 
-        # Ekip Arkadaşı Yönetimi (Admin Özel)
         if st.session_state.aktif_kullanici == "admin":
             st.divider()
             with st.expander("👤 Ekip Arkadaşı Yönetimi"):
@@ -117,7 +116,7 @@ else:
                 f_hafta = st.selectbox("Hafta", HAFTALAR)
                 f_plat = st.selectbox("Platform", ["Instagram", "Facebook", "YouTube"])
                 
-                # TÜM MARKALAR İÇİN 100 BİN+ LİMİTİ
+                # 100 BİN ÜZERİ DEĞERLER İÇİN LİMİT YÜKSELTİLDİ
                 f_takipci = st.number_input("Takipçi", min_value=0, max_value=50000000, step=100)
                 f_etkilesim = st.number_input("Etkileşim", min_value=0, max_value=50000000, step=100)
                 f_izlenme = st.number_input("YT İzlenme", min_value=0, max_value=50000000, step=100)
@@ -129,7 +128,7 @@ else:
                         yeni = {'Marka': final_m, 'Ay': f_ay, 'Hafta': f_hafta, 'Platform': f_plat, 'Takipci': f_takipci, 'Etkilesim': f_etkilesim, 'YT_Izlenme': f_izlenme}
                         df = pd.concat([df, pd.DataFrame([yeni])], ignore_index=True)
                         df.to_csv(DB_FILE, index=False)
-                        st.success("Veri Başarıyla Kaydedildi!")
+                        st.success("Kaydedildi!")
                         st.rerun()
 
         if st.button("Güvenli Çıkış", use_container_width=True):
@@ -141,7 +140,7 @@ else:
     if sayfa_modu == "🏠 Genel Bakış":
         st.title("🏠 Tüm Markaların Genel Karşılaştırması")
         if not df.empty:
-            # 1. GRAFİK: TAKİPÇİ (SOLDA GRAFİK, SAĞDA TABLO)
+            # TAKİPÇİ ANALİZİ
             st.subheader("👥 Aylık Toplam Takipçi")
             col_g1, col_g2 = st.columns([2, 1])
             with col_g1:
@@ -149,13 +148,13 @@ else:
                 fig_t = px.line(trend_t, x='Ay', y='Takipci', color='Marka', markers=True)
                 st.plotly_chart(fig_t, use_container_width=True)
             with col_g2:
+                st.markdown("### 📝 Net Rakamlar")
                 table_t = trend_t.pivot(index='Marka', columns='Ay', values='Takipci').fillna(0).astype(int)
-                st.markdown("### 📝 Net Değerler")
                 st.table(table_t.style.format("{:,}"))
 
             st.divider()
 
-            # 2. GRAFİK: ETKİLEŞİM (SOLDA GRAFİK, SAĞDA TABLO)
+            # ETKİLEŞİM ANALİZİ
             st.subheader("🔥 Aylık Toplam Etkileşim")
             col_e1, col_e2 = st.columns([2, 1])
             with col_e1:
@@ -163,39 +162,46 @@ else:
                 fig_e = px.bar(trend_e, x='Ay', y='Etkilesim', color='Marka', barmode='group')
                 st.plotly_chart(fig_e, use_container_width=True)
             with col_e2:
+                st.markdown("### 📝 Net Rakamlar")
                 table_e = trend_e.pivot(index='Marka', columns='Ay', values='Etkilesim').fillna(0).astype(int)
-                st.markdown("### 📝 Net Değerler")
                 st.table(table_e.style.format("{:,}"))
-        else: st.info("Henüz veri girilmemiş.")
+        else: st.info("Veri bulunamadı.")
         
     else:
-        # Marka Bazlı Detay - Haftalık Kırılım (Hepsi Bir Arada Grafik)
-        m_ay_df = df[(df['Marka'] == secilen_marka) & (df['Ay'] == secilen_ay)].sort_values(by='Hafta')
-        st.title(f"📊 {secilen_marka} - {secilen_ay} Analizi")
+        # MARKA BAZLI DETAY - PLATFORM ÖZEL HAFTALIK GRAFİKLER
+        m_ay_df = df[(df['Marka'] == secilen_marka) & (df['Ay'] == secilen_ay)]
+        st.title(f"📊 {secilen_marka} - {secilen_ay} Haftalık Analiz")
         
-        # Metrikler
+        # Üst Metrikler
         c1, c2, c3 = st.columns(3)
         c1.metric("Toplam Takipçi", f"{int(m_ay_df['Takipci'].sum()):,}")
         c2.metric("Toplam Etkileşim", f"{int(m_ay_df['Etkilesim'].sum()):,}")
         c3.metric("Dönem", secilen_ay)
 
-        st.divider()
-        st.subheader("📈 Haftalık Platform Kıyaslaması (Hepsi Bir Arada)")
-        pc1, pc2 = st.columns(2)
-        with pc1:
-            # Tek grafikte haftalık tüm platform takipçileri
-            st.plotly_chart(px.bar(m_ay_df, x='Hafta', y='Takipci', color='Platform', barmode='group', title="Haftalık Takipçi Payı"), use_container_width=True)
-        with pc2:
-            # Tek grafikte haftalık tüm platform etkileşimleri
-            st.plotly_chart(px.line(m_ay_df, x='Hafta', y='Etkilesim', color='Platform', markers=True, title="Haftalık Etkileşim Seyri"), use_container_width=True)
+        # Her platform için ayrı grafik satırı
+        for plat in ["Instagram", "Facebook", "YouTube"]:
+            plat_data = m_ay_df[m_ay_df['Platform'] == plat].sort_values(by='Hafta')
+            
+            if not plat_data.empty:
+                st.markdown(f'<div class="plat-card">{plat.upper()} Analizi</div>', unsafe_allow_html=True)
+                pc1, pc2 = st.columns(2)
+                with pc1:
+                    fig_p1 = px.bar(plat_data, x='Hafta', y='Takipci', title=f"{plat} Haftalık Takipçi", color_discrete_sequence=['#4B8BBE'], text_auto='.2s')
+                    fig_p1.update_xaxes(categoryorder='array', categoryarray=HAFTALAR)
+                    st.plotly_chart(fig_p1, use_container_width=True)
+                with pc2:
+                    fig_p2 = px.line(plat_data, x='Hafta', y='Etkilesim', title=f"{plat} Haftalık Etkileşim", markers=True, color_discrete_sequence=['#FFD43B'])
+                    fig_p2.update_xaxes(categoryorder='array', categoryarray=HAFTALAR)
+                    st.plotly_chart(fig_p2, use_container_width=True)
 
         st.divider()
+        # YouTube İzlenme ve Pasta Dağılımı
         col_low1, col_low2 = st.columns([2, 1])
         with col_low1:
-            st.subheader("🎥 YouTube İzlenme")
-            yt_data = m_ay_df[m_ay_df['Platform'] == 'YouTube']
+            st.subheader("🎥 YouTube İzlenme Analizi")
+            yt_data = m_ay_df[m_ay_df['Platform'] == 'YouTube'].sort_values(by='Hafta')
             if not yt_data.empty:
-                st.plotly_chart(px.bar(yt_data, x='Hafta', y='YT_Izlenme', color='Hafta', title="YouTube Haftalık İzlenme"), use_container_width=True)
+                st.plotly_chart(px.area(yt_data, x='Hafta', y='YT_Izlenme', title="Haftalık YouTube İzlenme Trendi", color_discrete_sequence=['#FF4B4B']), use_container_width=True)
         with col_low2:
-            st.subheader("🥧 Takipçi Dağılımı")
+            st.subheader("🥧 Takipçi Payı")
             st.plotly_chart(px.pie(m_ay_df, values='Takipci', names='Platform', hole=0.4), use_container_width=True)
