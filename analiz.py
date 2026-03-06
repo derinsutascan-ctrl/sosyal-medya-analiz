@@ -83,6 +83,7 @@ if not st.session_state.oturum_durumu:
     st.markdown('</div>', unsafe_allow_html=True)
 
 else:
+    
     # --- 5. ANA PANEL ---
     df = veri_yukle()
     
