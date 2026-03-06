@@ -10,19 +10,23 @@ st.set_page_config(
     initial_sidebar_state="collapsed" 
 )
 
-# Tarayıcıların çeviri hatasını engellemek için (404 hatası çözümü)
+# 404 Hatasını önlemek için (Android/Windows uyumu)
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
 
-# SADECE GİRİŞ EKRANI İÇİN CSS (İç sayfadaki grafikleri etkilemez)
+# CSS: Formu yukarı çeker ve o dikdörtgen kutuyu yok eder
 st.markdown("""
     <style>
+    /* Formu sayfanın daha üst kısmına taşır */
     .login-container {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        min-height: 75vh;
+        justify-content: flex-start; /* Üstten başlar */
+        padding-top: 10vh; /* Üstten %10'luk şık bir boşluk bırakır */
+        min-height: 80vh;
     }
+    
+    /* Giriş Kutusu Tasarımı */
     .login-box {
         max-width: 360px; 
         width: 100%;
@@ -47,15 +51,15 @@ if "oturum_durumu" not in st.session_state:
 if "aktif_kullanici" not in st.session_state:
     st.session_state.aktif_kullanici = ""
 
-# --- 4. GİRİŞ EKRANI (TEMİZLENMİŞ VERSİYON) ---
+# --- 4. GİRİŞ EKRANI (DİKDÖRTGEN KALDIRILDI VE YUKARI TAŞINDI) ---
 if not st.session_state.oturum_durumu:
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     
-    # TEKNOSTORE Yazısı kaldırıldı, sadece logo varsa logo görünecek
+    # Sadece logo varsa gösterilir, yoksa o boş kutu artık çıkmaz
     if os.path.exists("logo.png"):
-        st.image("logo.png", width=300)
+        st.image("logo.png", width=280)
     
-    # Giriş Kutusu
+    # Giriş Paneli
     _, col_mid, _ = st.columns([1, 1.2, 1])
     with col_mid:
         st.markdown('<div class="login-box">', unsafe_allow_html=True)
@@ -70,7 +74,7 @@ if not st.session_state.oturum_durumu:
                 st.session_state.aktif_kullanici = u
                 st.rerun()
             else:
-                st.error("Hatalı kullanıcı adı veya şifre!")
+                st.error("Kullanıcı adı veya şifre hatalı!")
         st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
