@@ -73,13 +73,8 @@ if not st.session_state.oturum_durumu:
 else:
     # --- 5. ANA PANEL ---
     df = veri_yukle()
-    
-    # Tüm aylar listesi (Aralık dahil)
-    AYLAR_LISTESI = [
-        "Ocak 2026", "Şubat 2026", "Mart 2026", "Nisan 2026", 
-        "Mayıs 2026", "Haziran 2026", "Temmuz 2026", "Ağustos 2026", 
-        "Eylül 2026", "Ekim 2026", "Kasım 2026", "Aralık 2026"
-    ]
+    AYLAR_LISTESI = ["Ocak 2026", "Şubat 2026", "Mart 2026", "Nisan 2026", "Mayıs 2026", "Haziran 2026", 
+                     "Temmuz 2026", "Ağustos 2026", "Eylül 2026", "Ekim 2026", "Kasım 2026", "Aralık 2026"]
 
     with st.sidebar:
         if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
@@ -105,21 +100,20 @@ else:
         if sayfa_modu == "📊 Marka Bazlı Detay":
             st.divider()
             secilen_marka = st.selectbox("Marka Seçin:", df['Marka'].unique() if not df.empty else ["Veri Yok"])
-            secilen_ay = st.selectbox("Ay Seçin:", AYLAR_LISTESI) # Aralık dahil seçim
+            secilen_ay = st.selectbox("Ay Seçin:", AYLAR_LISTESI)
         
         st.divider()
         with st.expander("🛠️ Yeni Marka / Veri Güncelle"):
             with st.form("admin_form"):
-                f_secim = st.selectbox("Marka Seç", ["--- Yeni Marka Ekle ---"] + df['Marka'].unique().tolist())
-                f_yeni_ad = st.text_input("Yeni Marka Adı (Eklenecekse)")
-                f_ay = st.selectbox("Dönem", AYLAR_LISTESI) # Formda da Aralık dahil
+                f_secim = st.selectbox("Marka Seç", ["--- Yeni ---"] + df['Marka'].unique().tolist())
+                f_yeni_ad = st.text_input("Yeni Marka Adı")
+                f_ay = st.selectbox("Dönem", AYLAR_LISTESI)
                 f_plat = st.selectbox("Platform", ["Instagram", "Facebook", "YouTube"])
-                f_takipci = st.number_input("Takipçi Sayısı", min_value=0)
-                f_etkilesim = st.number_input("Etkileşim Sayısı", min_value=0)
-                f_izlenme = st.number_input("YT İzlenme (Sadece YouTube)", min_value=0)
-                
+                f_takipci = st.number_input("Takipçi", min_value=0)
+                f_etkilesim = st.number_input("Etkileşim", min_value=0)
+                f_izlenme = st.number_input("YT İzlenme", min_value=0)
                 if st.form_submit_button("Sisteme Kaydet"):
-                    final_m = f_yeni_ad if f_secim == "--- Yeni Marka Ekle ---" else f_secim
+                    final_m = f_yeni_ad if f_secim == "--- Yeni ---" else f_secim
                     if final_m:
                         df = df[~((df['Marka'] == final_m) & (df['Ay'] == f_ay) & (df['Platform'] == f_plat))]
                         yeni = {'Marka': final_m, 'Ay': f_ay, 'Platform': f_plat, 'Takipci': f_takipci, 'Etkilesim': f_etkilesim, 'YT_Izlenme': f_izlenme}
@@ -133,16 +127,15 @@ else:
             st.session_state.oturum_durumu = False
             st.rerun()
 
-    # --- 6. RAPORLAMA VE GRAFİKLER (ORİJİNAL TASARIMIN) ---
+    # --- 6. RAPORLAMA VE GRAFİKLER ---
     if sayfa_modu == "🏠 Genel Bakış":
         st.title("🏠 Tüm Markaların Genel Trendi")
         if not df.empty:
             trend_df = df.groupby(['Ay', 'Marka'])['Takipci'].sum().reset_index()
-            fig_trend = px.line(trend_df, x='Ay', y='Takipci', color='Marka', markers=True, title="Aylık Toplam Takipçi Değişimi")
+            fig_trend = px.line(trend_df, x='Ay', y='Takipci', color='Marka', markers=True)
             st.plotly_chart(fig_trend, use_container_width=True)
         
     else:
-        # Marka Bazlı Detay (Orijinal Grafiklerin)
         m_df = df[df['Marka'] == secilen_marka]
         m_ay_df = m_df[m_df['Ay'] == secilen_ay]
         st.title(f"📊 {secilen_marka} Performans Analizi")
@@ -155,16 +148,26 @@ else:
         st.divider()
         st.subheader("📈 Aylık Gelişim Trendleri")
         col_t1, col_t2 = st.columns(2)
-        with col_t1: # Orijinal Kırmızı Alan Grafiği
+        with col_t1:
             fig1 = px.area(m_df.groupby('Ay')['Takipci'].sum().reset_index(), x='Ay', y='Takipci', title="Takipçi Trendi", color_discrete_sequence=['#FF4B4B'])
             st.plotly_chart(fig1, use_container_width=True)
-        with col_t2: # Orijinal Çizgi Grafiği
+        with col_t2:
             fig2 = px.line(m_df.groupby('Ay')['Etkilesim'].sum().reset_index(), x='Ay', y='Etkilesim', title="Etkileşim Trendi", markers=True)
             st.plotly_chart(fig2, use_container_width=True)
 
         st.divider()
+        st.subheader("🌐 Platform Bazlı Detaylı Analiz")
+        col_p1, col_p2 = st.columns(2)
+        with col_p1: # Platformlara Göre Takipçi Kıyaslaması
+            fig_p_takipci = px.bar(m_ay_df, x='Platform', y='Takipci', color='Platform', title=f"{secilen_ay} Platform Bazlı Takipçi", text_auto='.2s')
+            st.plotly_chart(fig_p_takipci, use_container_width=True)
+        with col_p2: # Platformlara Göre Etkileşim Kıyaslaması
+            fig_p_etkilesim = px.bar(m_ay_df, x='Platform', y='Etkilesim', color='Platform', title=f"{secilen_ay} Platform Bazlı Etkileşim", text_auto='.2s')
+            st.plotly_chart(fig_p_etkilesim, use_container_width=True)
+
+        st.divider()
         col_b1, col_b2 = st.columns([2, 1])
-        with col_b1: # Orijinal YouTube Bar
+        with col_b1: # Orijinal YouTube Bar Korundu
             st.subheader("🎥 YouTube İzlenme Analizi")
             yt_data = m_df[m_df['Platform'] == 'YouTube']
             if not yt_data.empty:
