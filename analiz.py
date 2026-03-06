@@ -114,3 +114,57 @@ else:
         
         # Metrikler ve platform bazlı detaylar...
         # (Önceki yazdığımız detaylı grafik kodlarını buraya yapıştırabilirsin)
+
+
+    # --- 6. RAPORLAMA VE GRAFİKLER ---
+    if sayfa_modu == "📊 Marka Bazlı Detay":
+        m_df = df[df['Marka'] == secilen_marka]
+        m_ay_df = m_df[m_df['Ay'] == secilen_ay]
+        
+        st.title(f"📊 {secilen_marka} - {secilen_ay}")
+        
+        # Üst Metrikler
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Toplam Takipçi", f"{int(m_ay_df['Takipci'].sum()):,}")
+        c2.metric("Toplam Etkileşim", f"{int(m_ay_df['Etkilesim'].sum()):,}")
+        c3.metric("Seçilen Ay", secilen_ay)
+
+        st.divider()
+
+        # 🎯 İSTEĞİN: HER SOSYAL MEDYA İÇİN AYRI AYRI GRAFİKLER
+        for plat in ["Instagram", "Facebook", "YouTube"]:
+            st.markdown(f'<div class="plat-header">{plat} Detayları</div>', unsafe_allow_html=True)
+            p_data = m_ay_df[m_ay_df['Platform'] == plat]
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.plotly_chart(px.bar(p_data, x='Platform', y='Takipci', title=f"{plat} Takipçi", color_discrete_sequence=['#4B8BBE']), use_container_width=True)
+            with col_b:
+                st.plotly_chart(px.bar(p_data, x='Platform', y='Etkilesim', title=f"{plat} Etkileşim", color_discrete_sequence=['#FFD43B']), use_container_width=True)
+
+        st.divider()
+
+        # 🎯 İSTEĞİN: HEPSİNİN AYNI GRAFİKTE OLDUĞU KIYASLAMA
+        st.subheader("⚖️ Genel Platform Kıyaslaması")
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            st.plotly_chart(px.bar(m_ay_df, x='Platform', y='Takipci', color='Platform', title="Tüm Platformlar: Takipçi", barmode='group'), use_container_width=True)
+        with col_c2:
+            st.plotly_chart(px.bar(m_ay_df, x='Platform', y='Etkilesim', color='Platform', title="Tüm Platformlar: Etkileşim", barmode='group'), use_container_width=True)
+
+        st.divider()
+
+        # Orijinal Alt Grafikler
+        col_alt1, col_alt2 = st.columns([2, 1])
+        with col_alt1:
+            st.subheader("🎥 YouTube İzlenme Analizi")
+            yt_data = m_df[m_df['Platform'] == 'YouTube']
+            if not yt_data.empty:
+                st.plotly_chart(px.bar(yt_data, x='Ay', y='YT_Izlenme', color='YT_Izlenme', color_continuous_scale='Reds'), use_container_width=True)
+        with col_alt2:
+            st.subheader("🥧 Takipçi Dağılımı")
+            st.plotly_chart(px.pie(m_ay_df, values='Takipci', names='Platform', hole=0.4), use_container_width=True)
+
+    else:
+        st.title("🏠 Genel Bakış")
+        if not df.empty:
+            st.plotly_chart(px.line(df.groupby(['Ay', 'Marka'])['Takipci'].sum().reset_index(), x='Ay', y='Takipci', color='Marka', markers=True), use_container_width=True)
