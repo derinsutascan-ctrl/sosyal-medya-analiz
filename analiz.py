@@ -3,99 +3,74 @@ import pandas as pd
 import plotly.express as px
 import os
 
-# --- 1. SAYFA VE TEMA AYARLARI ---
+# --- 1. SAYFA AYARLARI ---
 st.set_page_config(
     page_title="Teknostore Rapor Paneli", 
     layout="wide",
-    initial_sidebar_state="expanded" 
+    initial_sidebar_state="collapsed" 
 )
 
-# Tarayıcıların (Android/Windows) otomatik çeviri yapıp linki bozmasını engeller
+# Tarayıcıların çeviri hatasını engellemek için (404 hatası çözümü)
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
 
-# Gelişmiş Responsive CSS
+# SADECE GİRİŞ EKRANI İÇİN CSS (İç sayfadaki grafikleri etkilemez)
 st.markdown("""
     <style>
-    /* Metrik Kartları: Yazıların her modda okunmasını sağlar */
-    div[data-testid="stMetric"] {
-        background-color: rgba(128, 128, 128, 0.08);
-        border: 1px solid rgba(128, 128, 128, 0.2);
-        padding: 15px;
-        border-radius: 12px;
-    }
-    
-    /* Giriş Paneli: Tüm cihazlarda ortalar ve sığdırır */
     .login-container {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        margin-top: 30px;
+        min-height: 75vh;
     }
-    
     .login-box {
-        max-width: 400px;
+        max-width: 360px; 
         width: 100%;
-        padding: 25px;
+        padding: 30px;
         border: 1px solid rgba(128, 128, 128, 0.2);
         border-radius: 15px;
         background-color: transparent;
     }
-
-    /* Mobilde grafiklerin taşmasını önler */
-    .stPlotlyChart { width: 100% !important; }
-    iframe { max-width: 100% !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. VERİ TABANI SİSTEMİ ---
-DB_FILE = 'marka_veritabani_2026_final.csv'
-
-def veri_yukle():
-    if not os.path.exists(DB_FILE):
-        markalar = ['Teknostore', 'Aula', 'Nowgo']
-        aylar = ['Ocak 2026', 'Şubat 2026', 'Mart 2026']
-        rows = []
-        for m in markalar:
-            for a in aylar:
-                for p in ['Instagram', 'Facebook', 'YouTube']:
-                    rows.append({
-                        'Marka': m, 'Ay': a, 'Platform': p, 
-                        'Takipci': 1000, 'Etkilesim': 100, 
-                        'YT_Izlenme': 500 if p == 'YouTube' else 0
-                    })
-        df = pd.DataFrame(rows)
-        df.to_csv(DB_FILE, index=False)
-        return df
-    return pd.read_csv(DB_FILE)
+# --- 2. KULLANICI YETKİLERİ ---
+KULLANICILAR = {
+    "admin": "teknostore123",
+    "pazarlama": "satis2026",
+    "analiz": "rapor456"
+}
 
 # --- 3. OTURUM YÖNETİMİ ---
 if "oturum_durumu" not in st.session_state:
     st.session_state.oturum_durumu = False
+if "aktif_kullanici" not in st.session_state:
+    st.session_state.aktif_kullanici = ""
 
-# --- 4. GİRİŞ EKRANI (LOGOLU VE HATASIZ) ---
+# --- 4. GİRİŞ EKRANI (TEMİZLENMİŞ VERSİYON) ---
 if not st.session_state.oturum_durumu:
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     
-    # Logo Dosyası Kontrolü
+    # TEKNOSTORE Yazısı kaldırıldı, sadece logo varsa logo görünecek
     if os.path.exists("logo.png"):
-        st.image("logo.png", width=380)
-    else:
-        st.title("TEKNOSTORE")
-        
-    _, col_mid, _ = st.columns([1, 2, 1])
+        st.image("logo.png", width=300)
+    
+    # Giriş Kutusu
+    _, col_mid, _ = st.columns([1, 1.2, 1])
     with col_mid:
         st.markdown('<div class="login-box">', unsafe_allow_html=True)
-        st.subheader("🔐 Yönetim Girişi")
+        st.markdown("<h3 style='text-align: center; margin-bottom:20px;'>🔐 Yönetim Girişi</h3>", unsafe_allow_html=True)
+        
         u = st.text_input("Kullanıcı Adı", placeholder="Kullanıcı adınız...")
         p = st.text_input("Şifre", type="password", placeholder="Şifreniz...")
         
         if st.button("Sisteme Giriş Yap", use_container_width=True):
-            if u == "admin" and p == "teknostore123":
+            if u in KULLANICILAR and KULLANICILAR[u] == p:
                 st.session_state.oturum_durumu = True
+                st.session_state.aktif_kullanici = u
                 st.rerun()
             else:
-                st.error("Kullanıcı adı veya şifre hatalı!")
+                st.error("Hatalı kullanıcı adı veya şifre!")
         st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
