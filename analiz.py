@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed" 
 )
 
-# Tarayıcı çeviri hatalarını (404) önler
+# Tarayıcı çeviri hatalarını (404) önler    
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
 
 # CSS: Formu yukarı çeker, dikdörtgeni siler ve iç sayfa tasarımını korur
