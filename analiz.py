@@ -69,35 +69,40 @@ def veri_yukle():
         return df
     return pd.read_csv(DB_FILE)
 
-# --- 3. OTURUM YÖNETİMİ ---
+# --- 3. KULLANICI YETKİLERİ ---
+# Buraya dilediğin kadar kullanıcı ekleyebilirsin
+KULLANICILAR = {
+    "admin": "teknostore123",
+    "pazarlama": "satis2026",
+    "analiz": "rapor456",
+    "yonetim": "tekno789"
+}
+
 if "oturum_durumu" not in st.session_state:
     st.session_state.oturum_durumu = False
+if "aktif_kullanici" not in st.session_state:
+    st.session_state.aktif_kullanici = ""
 
-# --- 4. GİRİŞ EKRANI (LOGOLU VE HATASIZ) ---
+# --- 4. GİRİŞ EKRANI GÜNCELLEMESİ ---
 if not st.session_state.oturum_durumu:
-    st.markdown('<div class="login-container">', unsafe_allow_html=True)
+    # ... (Logo ve Login Box kısımları aynı kalıyor) ...
     
-    # Logo Dosyası Kontrolü
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=380)
-    else:
-        st.title("TEKNOSTORE")
-        
-    _, col_mid, _ = st.columns([1, 2, 1])
-    with col_mid:
-        st.markdown('<div class="login-box">', unsafe_allow_html=True)
-        st.subheader("🔐 Yönetim Girişi")
-        u = st.text_input("Kullanıcı Adı", placeholder="Kullanıcı adınız...")
-        p = st.text_input("Şifre", type="password", placeholder="Şifreniz...")
-        
-        if st.button("Sisteme Giriş Yap", use_container_width=True):
-            if u == "admin" and p == "teknostore123":
-                st.session_state.oturum_durumu = True
-                st.rerun()
-            else:
-                st.error("Kullanıcı adı veya şifre hatalı!")
-        st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    u = st.text_input("Kullanıcı Adı")
+    p = st.text_input("Şifre", type="password")
+    
+    if st.button("Giriş Yap", use_container_width=True):
+        # Kullanıcı sözlükte var mı ve şifre doğru mu kontrolü
+        if u in KULLANICILAR and KULLANICILAR[u] == p:
+            st.session_state.oturum_durumu = True
+            st.session_state.aktif_kullanici = u
+            st.success(f"Hoş geldiniz, {u.capitalize()}!")
+            st.rerun()
+        else:
+            st.error("Kullanıcı adı veya şifre hatalı!")
+
+else:
+    # Sayfanın en üstünde kimin giriş yaptığını gösterebilirsin
+    st.sidebar.write(f"👤 Giriş yapan: **{st.session_state.aktif_kullanici}**")
 
 else:
     # --- 5. ANA PANEL ---
