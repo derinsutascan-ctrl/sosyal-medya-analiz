@@ -83,7 +83,6 @@ if not st.session_state.oturum_durumu:
     st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    # --- BURADAN SONRA SENİN MEVCUT GRAFİK VE PANEL KODLARIN DEVAM ETMELİ ---
     # --- 5. ANA PANEL ---
     df = veri_yukle()
     
