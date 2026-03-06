@@ -81,7 +81,7 @@ if not st.session_state.oturum_durumu:
     if os.path.exists("logo.png"):
         st.image("https://cdn.imagevisit.com/2026/03/06/logo.png", width=380)
     else:
-        st.title("TEKNOSTORE")
+    
         
     _, col_mid, _ = st.columns([1, 2, 1])
     with col_mid:
