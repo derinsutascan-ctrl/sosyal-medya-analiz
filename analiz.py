@@ -68,6 +68,11 @@ if "aktif_kullanici" not in st.session_state:
 # --- 4. GİRİŞ EKRANI (DERLİ TOPLU TASARIM) ---
 if not st.session_state.oturum_durumu:
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
+    
+    # Logo
+    st.markdown('<div class="logo-spacing">', unsafe_allow_html=True)
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=320) # Logonun ideal boyutu
     else:
         st.title("TEKNOSTORE")
     st.markdown('</div>', unsafe_allow_html=True)
