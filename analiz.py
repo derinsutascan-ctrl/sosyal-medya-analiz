@@ -104,7 +104,6 @@ else:
     # Sayfanın en üstünde kimin giriş yaptığını gösterebilirsin
     st.sidebar.write(f"👤 Giriş yapan: **{st.session_state.aktif_kullanici}**")
 
-else:
     # --- 5. ANA PANEL ---
     df = veri_yukle()
     
