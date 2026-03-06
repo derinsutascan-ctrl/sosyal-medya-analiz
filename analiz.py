@@ -50,30 +50,46 @@ def veri_yukle():
         df.to_csv(DB_FILE, index=False)
         return df
     return pd.read_csv(DB_FILE)
-    # --- 2. VERİ TABANI SİSTEMİ --- (Burası sende zaten var, dokunma)
-DB_FILE = 'marka_veritabani_2026_final.csv'
-
-def veri_yukle():
-    if not os.path.exists(DB_FILE):
-        df = pd.DataFrame(columns=['Marka', 'Ay', 'Platform', 'Takipci', 'Etkilesim', 'YT_Izlenme'])
-        df.to_csv(DB_FILE, index=False)
-        return df
-    return pd.read_csv(DB_FILE)
-
-# --- 2.1 KULLANICI YÖNETİM SİSTEMİ (Burayı 53. satıra ekle) ---
+# --- 2. KULLANICI YETKİLERİ VE VERİ TABANI ---
+# Kullanıcıları kalıcı olarak saklamak için yeni bir dosya
 USER_DB = 'kullanicilar.csv'
 
 def kullanicilari_yukle():
     if not os.path.exists(USER_DB):
-        # Varsayılan olarak seni 'admin' yapar
-        df_u = pd.DataFrame([{"user": "admin", "pass": "teknostore123", "role": "Ana Kullanıcı"}])
-        df_u.to_csv(USER_DB, index=False)
-        return df_u
+        # İlk kurulumda ana kullanıcıyı (Seni) oluşturur
+        df_users = pd.DataFrame([{"user": "admin", "pass": "teknostore123", "role": "Ana Kullanıcı"}])
+        df_users.to_csv(USER_DB, index=False)
+        return df_users
     return pd.read_csv(USER_DB)
 
-# Kullanıcı verilerini belleğe al
+# Sisteme kayıtlı kullanıcıları çek
 df_kullanicilar = kullanicilari_yukle()
 KULLANICILAR = dict(zip(df_kullanicilar['user'], df_kullanicilar['pass']))
+ROLLER = dict(zip(df_kullanicilar['user'], df_kullanicilar['role']))
+
+# --- YAN MENÜ: KULLANICI EKLEME PANELİ (Sadece Admin Görür) ---
+if st.session_state.oturum_durumu:
+    with st.sidebar:
+        st.divider()
+        # Sadece "admin" giriş yaptıysa bu panel görünür
+        if st.session_state.aktif_kullanici == "admin":
+            with st.expander("👤 Ekip Arkadaşı Ekle"):
+                new_u = st.text_input("Yeni Kullanıcı Adı")
+                new_p = st.text_input("Yeni Şifre", type="password")
+                new_r = st.selectbox("Yetki Seviyesi", ["Ekip Üyesi", "Yönetici"])
+                
+                if st.button("Kullanıcıyı Tanımla"):
+                    if new_u and new_p:
+                        if new_u not in df_kullanicilar['user'].values:
+                            yeni_uye = pd.DataFrame([{"user": new_u, "pass": new_p, "role": new_r}])
+                            df_kullanicilar = pd.concat([df_kullanicilar, yeni_uye], ignore_index=True)
+                            df_kullanicilar.to_csv(USER_DB, index=False)
+                            st.success(f"{new_u} başarıyla eklendi! Lütfen sayfayı yenileyin.")
+                            st.rerun()
+                        else:
+                            st.warning("Bu kullanıcı zaten mevcut.")
+                    else:
+                        st.error("Lütfen tüm alanları doldurun.")
 
 # --- 3. KULLANICI YETKİLERİ ---
 KULLANICILAR = {
