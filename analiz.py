@@ -7,48 +7,59 @@ import os
 st.set_page_config(
     page_title="Teknostore Rapor Paneli", 
     layout="wide",
-    initial_sidebar_state="expanded" 
+    initial_sidebar_state="collapsed" 
 )
 
 # Tarayıcıların (Android/Windows) otomatik çeviri yapıp linki bozmasını engeller
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
 
-# Gelişmiş Responsive CSS
+# ÖZEL CSS: Giriş kutusunu daraltır ve her cihazda tam ortaya yerleştirir
 st.markdown("""
     <style>
-    /* Metrik Kartları: Yazıların her modda okunmasını sağlar */
+    /* Giriş sayfası için dikey ve yatay merkezleme */
+    .login-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+    }
+    
+    /* FORM KUTUSU: Maksimum 360px genişlik (Minimum ve şık boyut) */
+    .login-box {
+        max-width: 360px; 
+        width: 100%;
+        padding: 30px;
+        border: 1px solid rgba(128, 128, 128, 0.2);
+        border-radius: 15px;
+        background-color: rgba(255, 255, 255, 0.02);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    /* Logo altındaki boşluk */
+    .logo-spacing {
+        margin-bottom: 25px;
+        text-align: center;
+    }
+
+    /* Metrik kartları tasarımı (İç sayfadaki veriler için) */
     div[data-testid="stMetric"] {
         background-color: rgba(128, 128, 128, 0.08);
         border: 1px solid rgba(128, 128, 128, 0.2);
         padding: 15px;
         border-radius: 12px;
     }
-    
-    /* Giriş Paneli: Tüm cihazlarda ortalar ve sığdırır */
-    .login-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin-top: 30px;
-    }
-    
-    .login-box {
-        max-width: 400px;
-        width: 100%;
-        padding: 25px;
-        border: 1px solid rgba(128, 128, 128, 0.2);
-        border-radius: 15px;
-        background-color: transparent;
-    }
-
-    /* Mobilde grafiklerin taşmasını önler */
-    .stPlotlyChart { width: 100% !important; }
-    iframe { max-width: 100% !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. VERİ TABANI SİSTEMİ ---
+# --- 2. KULLANICI YETKİLERİ (Buraya dilediğin kadar kişi ekleyebilirsin) ---
+KULLANICILAR = {
+    "admin": "teknostore123",
+    "pazarlama": "satis2026",
+    "analiz": "rapor456"
+}
+
+# --- 3. VERİ TABANI SİSTEMİ ---
 DB_FILE = 'marka_veritabani_2026_final.csv'
 
 def veri_yukle():
@@ -69,48 +80,53 @@ def veri_yukle():
         return df
     return pd.read_csv(DB_FILE)
 
-# --- 3. KULLANICI YETKİLERİ ---
-# Buraya dilediğin kadar kullanıcı ekleyebilirsin
-KULLANICILAR = {
-    "admin": "teknostore123",
-    "pazarlama": "satis2026",
-    "analiz": "rapor456",
-    "yonetim": "tekno789"
-}
-
+# --- 4. OTURUM YÖNETİMİ ---
 if "oturum_durumu" not in st.session_state:
     st.session_state.oturum_durumu = False
 if "aktif_kullanici" not in st.session_state:
     st.session_state.aktif_kullanici = ""
 
-# --- 4. GİRİŞ EKRANI GÜNCELLEMESİ ---
+# --- 5. GİRİŞ EKRANI KONTROLÜ ---
 if not st.session_state.oturum_durumu:
-    # ... (Logo ve Login Box kısımları aynı kalıyor) ...
+    st.markdown('<div class="login-container">', unsafe_allow_html=True)
     
-    u = st.text_input("Kullanıcı Adı")
-    p = st.text_input("Şifre", type="password")
-    
-    if st.button("Giriş Yap", use_container_width=True):
-        # Kullanıcı sözlükte var mı ve şifre doğru mu kontrolü
-        if u in KULLANICILAR and KULLANICILAR[u] == p:
-            st.session_state.oturum_durumu = True
-            st.session_state.aktif_kullanici = u
-            st.success(f"Hoş geldiniz, {u.capitalize()}!")
-            st.rerun()
-        else:
-            st.error("Kullanıcı adı veya şifre hatalı!")
+    # Logo Bölümü
+    st.markdown('<div class="logo-spacing">', unsafe_allow_html=True)
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=300)
+    else:
+        st.title("TEKNOSTORE")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Giriş Kutusu (Küçültülmüş kolon yapısı ile)
+    _, col_mid, _ = st.columns([1, 1.2, 1])
+    with col_mid:
+        st.markdown('<div class="login-box">', unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center; margin-bottom:20px;'>🔐 Yönetim Girişi</h3>", unsafe_allow_html=True)
+        
+        u = st.text_input("Kullanıcı Adı", placeholder="Kullanıcı adınız...")
+        p = st.text_input("Şifre", type="password", placeholder="Şifreniz...")
+        
+        if st.button("Sisteme Giriş Yap", use_container_width=True):
+            if u in KULLANICILAR and KULLANICILAR[u] == p:
+                st.session_state.oturum_durumu = True
+                st.session_state.aktif_kullanici = u
+                st.rerun()
+            else:
+                st.error("Kullanıcı adı veya şifre hatalı!")
+        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    # Sayfanın en üstünde kimin giriş yaptığını gösterebilirsin
-    st.sidebar.write(f"👤 Giriş yapan: **{st.session_state.aktif_kullanici}**")
-
-    # --- 5. ANA PANEL ---
+    # --- 6. ANA ANALİZ PANELİ (Giriş Başarılıysa Burası Çalışır) ---
     df = veri_yukle()
     
     with st.sidebar:
         if os.path.exists("logo.png"):
             st.image("logo.png", use_container_width=True)
         st.title("🚀 Menü")
+        st.info(f"👤 Kullanıcı: {st.session_state.aktif_kullanici}")
+        
         sayfa_modu = st.radio("Görünüm Seçin:", ["🏠 Genel Bakış", "📊 Marka Bazlı Detay"])
         
         if sayfa_modu == "📊 Marka Bazlı Detay":
@@ -119,7 +135,6 @@ else:
             secilen_ay = st.selectbox("Ay Seçin:", df['Ay'].unique())
         
         st.divider()
-        # VERİ VE MARKA YÖNETİMİ
         with st.expander("🛠️ Yeni Marka / Veri Güncelle"):
             with st.form("admin_form"):
                 f_secim = st.selectbox("Marka Seç", ["--- Yeni Marka Ekle ---"] + df['Marka'].unique().tolist())
@@ -144,41 +159,35 @@ else:
             st.session_state.oturum_durumu = False
             st.rerun()
 
-    # --- 6. RAPORLAMA VE GRAFİKLER ---
+    # --- 7. RAPORLAMA VE GRAFİKLER ---
     if sayfa_modu == "🏠 Genel Bakış":
-        st.title("🏠 Tüm Markaların Genel Trendi")
+        st.title("🏠 Tüm Markaların Genel Karşılaştırması")
         trend_df = df.groupby(['Ay', 'Marka'])['Takipci'].sum().reset_index()
-        fig_trend = px.line(trend_df, x='Ay', y='Takipci', color='Marka', markers=True, title="Aylık Toplam Takipçi Değişimi")
+        fig_trend = px.line(trend_df, x='Ay', y='Takipci', color='Marka', markers=True, title="Aylık Toplam Takipçi Gelişimi")
         st.plotly_chart(fig_trend, use_container_width=True)
-        
 
     else:
         m_df = df[df['Marka'] == secilen_marka]
         m_ay_df = m_df[m_df['Ay'] == secilen_ay]
         
-        st.title(f"📊 {secilen_marka} Performans Analizi")
+        st.title(f"📊 {secilen_marka} - {secilen_ay} Analiz Raporu")
         
-        # Üst Metrikler (Dinamik ve Okunabilir)
         c1, c2, c3 = st.columns(3)
         c1.metric("Toplam Takipçi", f"{int(m_ay_df['Takipci'].sum()):,}")
         c2.metric("Toplam Etkileşim", f"{int(m_ay_df['Etkilesim'].sum()):,}")
-        c3.metric("Seçilen Ay", secilen_ay)
+        c3.metric("Seçilen Dönem", secilen_ay)
 
         st.divider()
-        
-        # 1. SATIR: AYDAN AYA TRENDLER
-        st.subheader("📈 Aylık Gelişim Trendleri")
+        st.subheader("📈 Aylık Performans Değişimi (Trend)")
         col_t1, col_t2 = st.columns(2)
         with col_t1:
-            fig1 = px.area(m_df.groupby('Ay')['Takipci'].sum().reset_index(), x='Ay', y='Takipci', title="Takipçi Trendi", color_discrete_sequence=['#FF4B4B'])
+            fig1 = px.area(m_df.groupby('Ay')['Takipci'].sum().reset_index(), x='Ay', y='Takipci', title="Takipçi Sayısı Trendi (Aylık)", color_discrete_sequence=['#00CC96'])
             st.plotly_chart(fig1, use_container_width=True)
         with col_t2:
-            fig2 = px.line(m_df.groupby('Ay')['Etkilesim'].sum().reset_index(), x='Ay', y='Etkilesim', title="Etkileşim Trendi", markers=True)
+            fig2 = px.line(m_df.groupby('Ay')['Etkilesim'].sum().reset_index(), x='Ay', y='Etkilesim', title="Etkileşim Sayısı Trendi (Aylık)", markers=True)
             st.plotly_chart(fig2, use_container_width=True)
 
         st.divider()
-        
-        # 2. SATIR: YOUTUBE ÖZEL VE DAĞILIM
         col_b1, col_b2 = st.columns([2, 1])
         with col_b1:
             st.subheader("🎥 YouTube İzlenme Analizi")
@@ -186,10 +195,7 @@ else:
             if not yt_data.empty:
                 fig_yt = px.bar(yt_data, x='Ay', y='YT_Izlenme', title="Aylık YouTube İzlenme Sayıları", color='YT_Izlenme', color_continuous_scale='Reds')
                 st.plotly_chart(fig_yt, use_container_width=True)
-            else:
-                st.info("YouTube verisi bulunamadı.")
-        
         with col_b2:
             st.subheader("🥧 Platform Dağılımı")
-            fig_pie = px.pie(m_ay_df, values='Takipci', names='Platform', hole=0.4, title=f"{secilen_ay} Takipçi Payı")
+            fig_pie = px.pie(m_ay_df, values='Takipci', names='Platform', hole=0.4, title=f"{secilen_ay} Dağılım")
             st.plotly_chart(fig_pie, use_container_width=True)
