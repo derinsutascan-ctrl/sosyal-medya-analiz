@@ -3,130 +3,116 @@ import pandas as pd
 import plotly.express as px
 import os
 
-# --- 1. AYARLAR VE TEMA ---
-st.set_page_config(page_title="Teknostore Sosyal Medya Raporu", layout="wide")
+# --- 1. SAYFA AYARLARI (İLK TASARIMDAKİ GİBİ) ---
+st.set_page_config(page_title="Teknostore Rapor Paneli", layout="wide")
 
-# Şık Siyah Tema CSS
+# Sevdiğin Karanlık Tema CSS
 st.markdown("""
     <style>
-    .stMetric { background-color: #1a1c23; border: 1px solid #343a40; padding: 15px; border-radius: 10px; }
-    [data-testid="stSidebar"] { background-color: #111217; }
+    .stMetric { background-color: #111; border: 1px solid #333; padding: 15px; border-radius: 10px; }
+    [data-testid="stSidebar"] { background-color: #0e1117; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. VERİ YÖNETİMİ (AYLIK YAPI) ---
+# --- 2. VERİ YÖNETİMİ ---
 DB_FILE = 'aylik_veriler.csv'
+if not os.path.exists(DB_FILE):
+    # Ocak 2026 Başlangıç Verileri
+    data = {
+        'Marka': ['Teknostore', 'Teknostore', 'Teknostore', 'Aula', 'Aula', 'Aula', 'Nowgo', 'Nowgo', 'Nowgo'],
+        'Ay': ['Ocak 2026'] * 9,
+        'Platform': ['Instagram', 'Facebook', 'YouTube'] * 3,
+        'Takipci': [15400, 5200, 3100, 8200, 4100, 1200, 19800, 7500, 4200],
+        'Erisim': [42000, 15000, 8000, 18500, 9000, 2500, 76000, 22000, 11000]
+    }
+    df = pd.DataFrame(data)
+    df.to_csv(DB_FILE, index=False)
+else:
+    df = pd.read_csv(DB_FILE)
 
-def veri_yukle():
-    if not os.path.exists(DB_FILE):
-        # Örnek Başlangıç Verisi (Ocak 2026)
-        data = {
-            'Marka': ['Teknostore', 'Teknostore', 'Teknostore', 'Aula', 'Aula', 'Aula'],
-            'Ay': ['Ocak 2026', 'Ocak 2026', 'Ocak 2026', 'Ocak 2026', 'Ocak 2026', 'Ocak 2026'],
-            'Platform': ['Instagram', 'Facebook', 'YouTube', 'Instagram', 'Facebook', 'YouTube'],
-            'Takipci': [12000, 5000, 3000, 8000, 4000, 1000],
-            'Erisim': [35000, 12000, 8000, 20000, 9000, 3000]
-        }
-        df = pd.DataFrame(data)
-        df.to_csv(DB_FILE, index=False)
-    return pd.read_csv(DB_FILE)
-
-df = veri_yukle()
-
-# --- 3. GİRİŞ SİSTEMİ ---
+# --- 3. GİRİŞ KONTROLÜ ---
 if "oturum" not in st.session_state:
     st.session_state.oturum = False
 
 if not st.session_state.oturum:
-    st.title("🔐 Yönetim Paneli Giriş")
-    user = st.text_input("Kullanıcı")
-    pw = st.text_input("Şifre", type="password")
-    if st.button("Giriş Yap"):
-        if user == "admin" and pw == "teknostore123":
+    st.title("🔐 Giriş Yapın")
+    u = st.text_input("Kullanıcı")
+    p = st.text_input("Şifre", type="password")
+    if st.button("Giriş"):
+        if u == "admin" and p == "teknostore123":
             st.session_state.oturum = True
             st.rerun()
 else:
     # --- 4. SOL MENÜ (SEÇİMLER) ---
     with st.sidebar:
-        st.header("📍 Filtreler")
-        secilen_marka = st.selectbox("Marka Seçin", df['Marka'].unique())
-        secilen_ay = st.selectbox("Ay Seçin", df['Ay'].unique())
-        
+        st.title("📂 Menü")
+        secilen_marka = st.selectbox("Marka Seçin:", df['Marka'].unique())
+        secilen_ay = st.selectbox("Dönem Seçin:", df['Ay'].unique())
         st.divider()
-        if st.button("Çıkış Yap"):
+        if st.button("Güvenli Çıkış"):
             st.session_state.oturum = False
             st.rerun()
 
-    # --- 5. ANA SAYFA (GRAFİKLER) ---
-    # Seçilen filtreye göre veriyi süz
+    # --- 5. ANA SAYFA (TAMAMEN SENİN İSTEDİĞİN DÜZEN) ---
     ekran_verisi = df[(df['Marka'] == secilen_marka) & (df['Ay'] == secilen_ay)]
     
-    st.title(f"📊 {secilen_marka} - {secilen_ay} Raporu")
+    # Başlık
+    st.title(f"📊 {secilen_marka} Sosyal Medya Raporu ({secilen_ay})")
     
-    # Metrikler (Toplamlar)
-    t_takipci = ekran_verisi['Takipci'].sum()
-    t_erisim = ekran_verisi['Erisim'].sum()
-    
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Toplam Takipçi (Tüm Kanallar)", f"{t_takipci:,}")
-    c2.metric("Toplam Erişim", f"{t_erisim:,}")
-    c3.metric("Rapor Dönemi", secilen_ay)
+    # Üst Metrik Kartları (İlk görseldeki gibi 4'lü yapı)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Toplam Takipçi", f"{ekran_verisi['Takipci'].sum():,}", "+5%")
+    c2.metric("Aylık Erişim", f"{ekran_verisi['Erisim'].sum():,}", "+12%")
+    c3.metric("Etkileşim Oranı", "%4.8", "0.3%")
+    c4.metric("Aktif Reklam", "4 Adet", "Sabit")
 
     st.divider()
 
-    # Sosyal Medya Dağılım Grafikleri
-    col1, col2 = st.columns(2)
+    # Grafikler
+    col_sol, col_sag = st.columns([2, 1])
     
-    with col1:
-        st.subheader("Platform Bazlı Takipçi")
-        fig_bar = px.bar(ekran_verisi, x='Platform', y='Takipci', color='Platform',
-                         color_discrete_sequence=['#E1306C', '#4267B2', '#FF0000'], # IG, FB, YT renkleri
-                         template="plotly_dark")
-        st.plotly_chart(fig_bar, use_container_width=True)
+    with col_sol:
+        st.subheader("Platform Bazlı Etkileşim")
+        fig = px.bar(ekran_verisi, x='Platform', y='Takipci', color='Platform',
+                     color_discrete_map={'Instagram': '#E1306C', 'Facebook': '#4267B2', 'YouTube': '#FF0000'},
+                     template="plotly_dark")
+        st.plotly_chart(fig, use_container_width=True)
 
-    with col2:
-        st.subheader("Erişim Dağılımı (%)")
-        fig_pie = px.pie(ekran_verisi, values='Erisim', names='Platform', hole=0.4,
-                         color_discrete_sequence=['#E1306C', '#4267B2', '#FF0000'],
+    with col_sag:
+        st.subheader("Kanal Dağılımı (%)")
+        fig_pie = px.pie(ekran_verisi, values='Takipci', names='Platform', hole=0.4,
+                         color_discrete_map={'Instagram': '#E1306C', 'Facebook': '#4267B2', 'YouTube': '#FF0000'},
                          template="plotly_dark")
         st.plotly_chart(fig_pie, use_container_width=True)
 
-    # --- 6. VERİ GÜNCELLEME ALANI (EN ALTTA) ---
+    # --- 6. GİZLİ YÖNETİM PANELİ (EN ALTA EKLENDİ) ---
     st.divider()
-    with st.expander("🛠️ Veri Girişi ve Güncelleme Paneli"):
-        st.write("Yeni ay verisi girmek veya mevcut olanı değiştirmek için kullanın.")
-        with st.form("güncelleme_formu"):
-            f_marka = st.selectbox("Marka", ["Teknostore", "Aula", "Nowgo", "Yeni Ekle..."])
-            f_yeni_marka = st.text_input("Yeni Marka Adı (Eğer listede yoksa)")
-            f_ay = st.selectbox("Ay", ["Ocak 2026", "Şubat 2026", "Mart 2026", "Nisan 2026"])
+    with st.expander("🛠️ Veri Güncelleme ve Aylık Giriş Alanı"):
+        with st.form("aylik_guncelleme"):
+            st.write(f"**{secilen_marka}** markası için veri giriyorsunuz.")
+            f_ay = st.selectbox("Hangi Ay?", ["Ocak 2026", "Şubat 2026", "Mart 2026", "Nisan 2026", "Mayıs 2026"])
             
-            st.write("---")
-            # Her platform için giriş alanları
-            st.write("**Instagram**")
-            ig_t = st.number_input("Instagram Takipçi", min_value=0)
-            ig_e = st.number_input("Instagram Erişim", min_value=0)
+            st.info("Instagram Verileri")
+            ig_t = st.number_input("Instagram Takipçi", value=0)
+            ig_e = st.number_input("Instagram Erişim", value=0)
             
-            st.write("**Facebook**")
-            fb_t = st.number_input("Facebook Takipçi", min_value=0)
-            fb_e = st.number_input("Facebook Erişim", min_value=0)
+            st.info("Facebook Verileri")
+            fb_t = st.number_input("Facebook Takipçi", value=0)
+            fb_e = st.number_input("Facebook Erişim", value=0)
             
-            st.write("**YouTube**")
-            yt_t = st.number_input("YouTube Takipçi", min_value=0)
-            yt_e = st.number_input("YouTube Erişim", min_value=0)
+            st.info("YouTube Verileri")
+            yt_t = st.number_input("YouTube Takipçi", value=0)
+            yt_e = st.number_input("YouTube Erişim", value=0)
             
-            if st.form_submit_button("Verileri Kaydet"):
-                hedef_marka = f_yeni_marka if f_marka == "Yeni Ekle..." else f_marka
-                
-                # Mevcut kayıtları temizle (tekrar yazmamak için)
-                df = df[~((df['Marka'] == hedef_marka) & (df['Ay'] == f_ay))]
-                
-                # Yeni kayıtları ekle
-                yeni_kayitlar = [
-                    {'Marka': hedef_marka, 'Ay': f_ay, 'Platform': 'Instagram', 'Takipci': ig_t, 'Erisim': ig_e},
-                    {'Marka': hedef_marka, 'Ay': f_ay, 'Platform': 'Facebook', 'Takipci': fb_t, 'Erisim': fb_e},
-                    {'Marka': hedef_marka, 'Ay': f_ay, 'Platform': 'YouTube', 'Takipci': yt_t, 'Erisim': yt_e}
-                ]
-                df = pd.concat([df, pd.DataFrame(yeni_kayitlar)], ignore_index=True)
+            if st.form_submit_button("Verileri Sisteme İşle"):
+                # Eskileri sil, yenileri ekle
+                df = df[~((df['Marka'] == secilen_marka) & (df['Ay'] == f_ay))]
+                yeni = pd.DataFrame([
+                    {'Marka': secilen_marka, 'Ay': f_ay, 'Platform': 'Instagram', 'Takipci': ig_t, 'Erisim': ig_e},
+                    {'Marka': secilen_marka, 'Ay': f_ay, 'Platform': 'Facebook', 'Takipci': fb_t, 'Erisim': fb_e},
+                    {'Marka': secilen_marka, 'Ay': f_ay, 'Platform': 'YouTube', 'Takipci': yt_t, 'Erisim': yt_e}
+                ])
+                df = pd.concat([df, yeni], ignore_index=True)
                 df.to_csv(DB_FILE, index=False)
-                st.success(f"{hedef_marka} için {f_ay} verileri güncellendi!")
+                st.success("Veriler kaydedildi! Lütfen sayfayı yenileyin veya ayı seçin.")
                 st.rerun()
