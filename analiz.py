@@ -13,26 +13,29 @@ st.set_page_config(
 # 404 Hatasını önlemek için (Android/Windows uyumu)
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
 
-# CSS: Formu yukarı çeker ve o dikdörtgen kutuyu yok eder
+# ÖZEL CSS: Dikdörtgeni yok eder ve formu en yukarı çeker
 st.markdown("""
     <style>
-    /* Formu sayfanın daha üst kısmına taşır */
+    /* Streamlit'in varsayılan üst boşluğunu sıfırlayarak formu yukarı çeker */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 0rem !important;
+    }
+    
     .login-container {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: flex-start; /* Üstten başlar */
-        padding-top: 10vh; /* Üstten %10'luk şık bir boşluk bırakır */
-        min-height: 80vh;
+        justify-content: flex-start;
+        margin-top: 20px; /* En üste çok yapışmaması için küçük bir pay */
     }
     
-    /* Giriş Kutusu Tasarımı */
     .login-box {
         max-width: 360px; 
         width: 100%;
-        padding: 30px;
+        padding: 25px;
         border: 1px solid rgba(128, 128, 128, 0.2);
-        border-radius: 15px;
+        border-radius: 12px;
         background-color: transparent;
     }
     </style>
@@ -51,19 +54,20 @@ if "oturum_durumu" not in st.session_state:
 if "aktif_kullanici" not in st.session_state:
     st.session_state.aktif_kullanici = ""
 
-# --- 4. GİRİŞ EKRANI (DİKDÖRTGEN KALDIRILDI VE YUKARI TAŞINDI) ---
+# --- 4. GİRİŞ EKRANI (TAMAMEN TEMİZLENMİŞ VE YUKARI TAŞINMIŞ) ---
 if not st.session_state.oturum_durumu:
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     
-    # Sadece logo varsa gösterilir, yoksa o boş kutu artık çıkmaz
+    # O DİKDÖRTGENİ KALDIRAN BÖLÜM: 
+    # Sadece dosya gerçekten varsa st.image çalışır, yoksa hiçbir alan kaplamaz.
     if os.path.exists("logo.png"):
-        st.image("logo.png", width=280)
+        st.image("logo.png", width=250)
     
-    # Giriş Paneli
+    # Form Alanı
     _, col_mid, _ = st.columns([1, 1.2, 1])
     with col_mid:
         st.markdown('<div class="login-box">', unsafe_allow_html=True)
-        st.markdown("<h3 style='text-align: center; margin-bottom:20px;'>🔐 Yönetim Girişi</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center; margin-top:0;'>🔐 Yönetim Girişi</h3>", unsafe_allow_html=True)
         
         u = st.text_input("Kullanıcı Adı", placeholder="Kullanıcı adınız...")
         p = st.text_input("Şifre", type="password", placeholder="Şifreniz...")
@@ -74,11 +78,12 @@ if not st.session_state.oturum_durumu:
                 st.session_state.aktif_kullanici = u
                 st.rerun()
             else:
-                st.error("Kullanıcı adı veya şifre hatalı!")
+                st.error("Hatalı kullanıcı adı veya şifre!")
         st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 else:
+    # --- BURADAN SONRA SENİN MEVCUT GRAFİK VE PANEL KODLARIN DEVAM ETMELİ ---
     # --- 5. ANA PANEL ---
     df = veri_yukle()
     
