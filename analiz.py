@@ -147,7 +147,6 @@ else:
             secilen_ay = st.selectbox("Ay Seçin:", df['Ay'].unique())
         
         st.divider()
-                        
         with st.expander("🛠️ Yeni Marka / Veri Güncelle"):
             with st.form("admin_form"):
                 f_secim = st.selectbox("Marka Seç", ["--- Yeni Marka Ekle ---"] + df['Marka'].unique().tolist())
