@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed" 
 )
 
-# Tarayıcı çeviri hatalarını (404) önler    
+# Tarayıcı çeviri hatalarını (404) önler
 st.markdown('<meta name="google" content="notranslate">', unsafe_allow_html=True)
 
 # CSS: Formu yukarı çeker, dikdörtgeni siler ve iç sayfa tasarımını korur
@@ -50,46 +50,6 @@ def veri_yukle():
         df.to_csv(DB_FILE, index=False)
         return df
     return pd.read_csv(DB_FILE)
-    # --- 2. KULLANICI YETKİLERİ VE VERİ TABANI ---
-# Kullanıcıları kalıcı olarak saklamak için yeni bir dosya
-USER_DB = 'kullanicilar.csv'
-
-def kullanicilari_yukle():
-    if not os.path.exists(USER_DB):
-        # İlk kurulumda ana kullanıcıyı (Seni) oluşturur
-        df_users = pd.DataFrame([{"user": "admin", "pass": "teknostore123", "role": "Ana Kullanıcı"}])
-        df_users.to_csv(USER_DB, index=False)
-        return df_users
-    return pd.read_csv(USER_DB)
-
-# Sisteme kayıtlı kullanıcıları çek
-df_kullanicilar = kullanicilari_yukle()
-KULLANICILAR = dict(zip(df_kullanicilar['user'], df_kullanicilar['pass']))
-ROLLER = dict(zip(df_kullanicilar['user'], df_kullanicilar['role']))
-
-# --- YAN MENÜ: KULLANICI EKLEME PANELİ (Sadece Admin Görür) ---
-if st.session_state.oturum_durumu:
-    with st.sidebar:
-        st.divider()
-        # Sadece "admin" giriş yaptıysa bu panel görünür
-        if st.session_state.aktif_kullanici == "admin":
-            with st.expander("👤 Ekip Arkadaşı Ekle"):
-                new_u = st.text_input("Yeni Kullanıcı Adı")
-                new_p = st.text_input("Yeni Şifre", type="password")
-                new_r = st.selectbox("Yetki Seviyesi", ["Ekip Üyesi", "Yönetici"])
-                
-                if st.button("Kullanıcıyı Tanımla"):
-                    if new_u and new_p:
-                        if new_u not in df_kullanicilar['user'].values:
-                            yeni_uye = pd.DataFrame([{"user": new_u, "pass": new_p, "role": new_r}])
-                            df_kullanicilar = pd.concat([df_kullanicilar, yeni_uye], ignore_index=True)
-                            df_kullanicilar.to_csv(USER_DB, index=False)
-                            st.success(f"{new_u} başarıyla eklendi! Lütfen sayfayı yenileyin.")
-                            st.rerun()
-                        else:
-                            st.warning("Bu kullanıcı zaten mevcut.")
-                    else:
-                        st.error("Lütfen tüm alanları doldurun.")
 
 # --- 3. KULLANICI YETKİLERİ ---
 KULLANICILAR = {
